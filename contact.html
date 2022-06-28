@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Contact Us | HRAM0</title>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="style/prism.css" rel="stylesheet"/>
+<link href="style/theorems.css" rel="stylesheet"/>  
+</head>
+<style>
+blockquote {
+	font-style: italic;
+	color: #555;
+	padding-left: 32px;
+	border-left: 3px solid ;
+}
+
+body {
+  margin: 40px;
+  font-family: Arial, Helvetica, sans-serif;  
+}
+
+.menu {
+    /*min-width: 170px;*/
+    grid-area: menu;
+   font-size: 1.25vw;
+  }
+
+  .content {
+    grid-area: content;
+  }
+
+  .header {
+    grid-area: header;
+  }
+
+
+  .wrapper {
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 15%  85%;
+    grid-template-areas:
+               "....... header"
+               "menu content";
+    background-color: #ffffff;
+    color: #000000;
+  }
+.box {
+  background-color: #EEEEEE;
+  color: #000000;
+  border-radius: 5px;
+  border-style: dashed;  
+  padding: 1.25vw;
+}
+
+.header {
+  background-color: #02994D;
+  color: white;
+  border-color: black;
+}
+
+ul.vertical {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 7vw;
+    /*width: 170px;*/
+    background-color: #f1f1f1;
+}
+
+ul.vertical li a {
+    display: block;
+    color: #000;
+    padding: 0px 0 8px 0px;
+    text-decoration: none;
+    border-bottom: 2px solid #000000;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+tr.row td {
+    border-bottom: 2px solid #000000;
+}
+
+pre {
+    width: 76.5%;
+    border: 2px solid #000000;
+}
+
+ul.vertical li a:hover:not(.active) {
+    background-color: #555;
+    color:white;
+}
+
+ul.vertical a.active {
+    background-color: #02994D;
+    color:white;
+}
+
+
+
+</style>
+<script src="js/prism.js" defer></script>
+
+
+<div class='wrapper'>
+<div class='box header'><b>HRAM0</b> | Model and Toolchain for Research in Memory Safety</div>
+<div class='box menu'>
+<center><ul class='vertical'><li><a href="hram0.html">Home</a></li>
+<li><a href="spec.html">Specification</a></li>
+<li><a href="asm.html">Assembly</a></li>
+<li><a href="source.html">Source</a></li>
+<li><a href="memsafe.html">Memory Safety</a></li>
+<li><a class='active' href="contact.html">Contact</a></li>
+</ul>
+</div>
+</center>
+<div class='box content'><article style='margin-top: 32px;'><h1>Contact Us</h1><u>Last Updated:</u> <time datetime=2022-06-26T09:15:48>Sunday 26th June 2022</time><p>We are a small group based in the Computer Science department of Trinity College Dublin. We welcome collaborators or anyone who wishes to assist with the project. We also appreciate any feedback, suggestions or comments you may have, and will attempt to answer any questions.</p>
+<p>So to get in touch, you can email: <em>hram0 at protonmail dot com</em>.</p></article></div>
+      </div><footer style='margin-top:32px;'>
+</footer><!DOCTYPE html>
+<script src="js/math_code.js"></script>
+<script async
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Characterization of Memory Safety | HRAM0</title>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="style/prism.css" rel="stylesheet"/>
+<link href="style/theorems.css" rel="stylesheet"/>  
+</head>
+<style>
+blockquote {
+	font-style: italic;
+	color: #555;
+	padding-left: 32px;
+	border-left: 3px solid ;
+}
+
+body {
+  margin: 40px;
+  font-family: Arial, Helvetica, sans-serif;  
+}
+
+.menu {
+    /*min-width: 170px;*/
+    grid-area: menu;
+   font-size: 1.25vw;
+  }
+
+  .content {
+    grid-area: content;
+  }
+
+  .header {
+    grid-area: header;
+  }
+
+
+  .wrapper {
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 15%  85%;
+    grid-template-areas:
+               "....... header"
+               "menu content";
+    background-color: #ffffff;
+    color: #000000;
+  }
+.box {
+  background-color: #EEEEEE;
+  color: #000000;
+  border-radius: 5px;
+  border-style: dashed;  
+  padding: 1.25vw;
+}
+
+.header {
+  background-color: #02994D;
+  color: white;
+  border-color: black;
+}
+
+ul.vertical {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 7vw;
+    /*width: 170px;*/
+    background-color: #f1f1f1;
+}
+
+ul.vertical li a {
+    display: block;
+    color: #000;
+    padding: 0px 0 8px 0px;
+    text-decoration: none;
+    border-bottom: 2px solid #000000;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+tr.row td {
+    border-bottom: 2px solid #000000;
+}
+
+pre {
+    width: 76.5%;
+    border: 2px solid #000000;
+}
+
+ul.vertical li a:hover:not(.active) {
+    background-color: #555;
+    color:white;
+}
+
+ul.vertical a.active {
+    background-color: #02994D;
+    color:white;
+}
+
+
+
+</style>
+<script src="js/prism.js" defer></script>
+
+
+<div class='wrapper'>
+<div class='box header'><b>HRAM0</b> | Model and Toolchain for Research in Memory Safety</div>
+<div class='box menu'>
+<center><ul class='vertical'><li><a href="hram0.html">Home</a></li>
+<li><a href="spec.html">Specification</a></li>
+<li><a href="asm.html">Assembly</a></li>
+<li><a href="source.html">Source</a></li>
+<li><a href="memsafe.html">Memory Safety</a></li>
+<li><a href="contact.html">Contact</a></li>
+</ul>
+</div>
+</center>
+<div class='box content'><article style='margin-top: 32px;'><h1>Characterization of Memory Safety</h1><u>Last Updated:</u> <time datetime=2022-06-27T13:21:38>Monday 27th June 2022</time><style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+</style>
+<p>Here we attempt to provide  a rigorous characterization of memory safety using HRAM0.</p>
+<div class="definition" style="font-style: normal">
+<b>1. </b>A program <code>$P$</code> is a pair <code>$(\mathbf{c}, \mathbf{d})$</code> where <code>$\mathbf{c} \in \mathbb{Z}^+$</code> is a non-empty finite sequence of integers that represents the program code and <code>$\mathbf{d} \in \mathbb{Z}^*$</code> is a finite sequence of integers that represents the statically-allocated data.
+</div>
+<p>A concrete example is the following representation of the program <code>$P_{\mathsf{init}}$</code> described in the specification, where the label <code>main</code> is mapped to the address 6 (in fact, the BRN instruction in this case simply jumps to the next instruction). Hence, we write <code>$P_{\mathsf{init}} = (\mathbf{c} := [1, -1, 2, 6, 2, 6], \mathbf{d} := [0])$</code>.</p>
+<p>The execution of a program <code>$P = (\mathbf{c}, \mathbf{d})$</code> on input <code>$\mathbf{x} \in \mathbb{Z}^*$</code> involves loading <code>$\mathbf{c}$</code> into the code segment, whose size we denote by <code>$c = |\mathbf{c}|$</code>, and loading <code>$\mathbf{d} \parallel \mathbf{x}$</code> into the data segment, whose size we denote by <code>$d = |\mathbf{d}| + n$</code> where <code>$n = |\mathbf{x}|$</code> and starting the machine with this state. We conveniently write <code>$\mathsf{exec}(P, \mathbf{x})$</code> to signify such execution, which is defined as follows.</p>
+<ul>
+<li>
+<p><code>$\mathsf{exec}_f(P, \mathbf{x}) = \begin{cases} \infty &amp; \text{ if execution does not terminate} \\ \bot &amp; \text{ if execution terminates in the ERROR state} \\ f(M) &amp; \text{ if execution terminates in the HALT state} \\ \end{cases}$</code></p>
+<p>where <code>$M \subset \mathcal{P}(\mathbb{Z} \times \mathbb{Z})$</code> is the memory relation reflecting the contents of the data segment when the program halts and <code>$f : \mathcal{P}(\mathbb{Z} \times \mathbb{Z}) \to \Gamma$</code> is a <em>filter</em> function, expressed here polymorphically since <code>$\Gamma$</code> stands for some set, that maps memory contents to elements of <code>$\Gamma$</code>. </p>
+</li>
+</ul>
+<p>The input is not required to be non-empty. Naturally, <code>$\mathsf{exec}_f(\cdot, \cdot)$</code> is not computable in the general case as a result of the halting problem. When the subscript <code>$f$</code> is omitted, then <code>$f$</code> is taken to be the identity function; that is, <code>$\Gamma$</code> is instantiated with the set <code>$\mathcal{P}(\mathbb{Z} \times \mathbb{Z})$</code>. For example, a filter <code>$g : \mathcal{P}(\mathbb{Z} \times \mathbb{Z}) \to \mathbb{Z}$</code> that sums the first <code>$k$</code> <code>words</code> of memory assuming such are defined would be defined as: <code>$g(M) = \sum_{i=0}^{k - 1} M(i)$</code>.</p>
+<p>In the following definitions, we write an instruction's three-letter mnemonic in place of its numerical opcode value, but it is the latter that should be interpreted. We now define the following arity function <code>$\alpha : \mathbb{Z} \to \mathbb{N}$</code>:</p>
+<ul>
+<li><code>$\alpha(v) = \begin{cases} 0 &amp; \text{ if } v \leq 0 \text{ or } v = \mathsf{RET} \text{ or } v &gt; 10 \\ 1 &amp; \text{ if } v = \mathsf{FRE} \text{ or } v = \mathsf{CAL} \\ 3 &amp; \text{ if } v = \mathsf{ADD} \text{ or } v = \mathsf{SUB} \\ 2 &amp; \text{ otherwise } \\ \end{cases}$</code></li>
+</ul>
+<p>We now define a predicate <code>$\mathsf{vi} : \mathcal{P}(\mathbb{Z}) \times \mathbb{Z}^+ \to \{0, 1\}$</code> that determines whether an integer sequence validly encodes an instruction. Note that this notion of validity is purely syntactic and relates to the well-formedness of an instruction encoding.</p>
+<ul>
+<li><code>$\mathsf{vi}(V, \mathbf{c}) = \begin{cases} 1 &amp; \text{ if } c_0 = \mathsf{FRE} \; \land \; |\mathbf{c}| \geq 2 \; \land \; 0 \leq c_1 &lt; \rho  \\ 1 &amp; \text{ if } c_0 = \mathsf{PUT} \; \land \; |\mathbf{c}| \geq 3 \; \land \; 0 \leq c_2 &lt; \rho  \\ 1 &amp; \text{ if } c_0 \in \{\mathsf{ADD}, \mathsf{SUB}\} \; \land \; |\mathbf{c}| \geq 4 \; \land \; 0 \leq c_1, c_2 \leq \rho + 1 \; \land \; 0 \leq c_3 &lt; \rho  \\ 1 &amp; \text{ if } c_0 \in \{\mathsf{LOD}, \mathsf{MAL}\} \; \land \; |\mathbf{c}| \geq 3 \; \land \; 0 \leq c_1 \leq \rho + 1 \; \land \; 0 \leq c_2 &lt; \rho \\ 1 &amp; \text{ if } c_0 = \mathsf{STO} \; \land \; |\mathbf{c}| \geq 3 \; \land \; 0 \leq c_1, c_2 \leq \rho + 1 \\ 1 &amp; \text{ if } c_0 = \mathsf{CAL} \; \land \; |\mathbf{c}| \geq 2 \; \land \; c_1 \in V \\ 1 &amp; \text{ if } c_o = \mathsf{BRN} \; \land \; |\mathbf{c}| \geq 3 \; \land \; 0 \leq c_1 \leq \rho + 1 \; \land \; c_2 \in V \\ 0 &amp; \text{ otherwise } \\ \end{cases}$</code></li>
+</ul>
+<p>Our definition of a predicate that establishes the validity of a program requires us to first define two important prerequisites, namely, a recursive predicate <code>$\mathsf{vprec} : \mathcal{P}(\mathbb{Z}) \times \mathbb{Z}^+ \to \{0, 1\}$</code>, and a recursive function <code>$\mathsf{aggr} : \mathbb{Z}^+ \times \mathbb{Z} \times \mathcal{P}(\mathbb{Z}) \to \mathcal{P}(\mathbb{Z})$</code>, which we define in turn.</p>
+<ul>
+<li>
+<p><code>$\mathsf{vprec}(V, \mathbf{c}) = \mathsf{vi}(V, \mathbf{c}) \; \land \; (|\mathbf{c}| = \alpha(c_0) + 1 \lor \mathsf{vprec}(V, \mathbf{c}[\alpha(c_0) + 1;\ldots]))$</code></p>
+<p>where the notation <code>$\mathbf{c}[i;...]$</code> denotes the subsequence <code>$c_i, c_{i  + 1}, \ldots, c_{|\mathbf{c}| - 1}$</code>.</p>
+</li>
+<li><code>$\mathsf{aggr}(\mathbf{c}, \mathsf{offset}, V) = $</code>
+<code>$$\begin{cases} V \cup \{\mathsf{offset}\} &amp; \text{ if } \mathsf{offset} = |\mathbf{c}| \\ \mathsf{aggr}(\mathbf{c}, \mathsf{offset} + 1 + \alpha(c_{\mathsf{offset}}), V \cup \{\mathsf{offset}\}) &amp; \text{ if } 0 \leq \mathsf{offset} &lt; |\mathbf{c}| \; \land \; 0 \leq c_{\mathsf{offset}} \leq 10 \\ \emptyset &amp; \text{ otherwise } \\ \end{cases}$$</code></li>
+</ul>
+<p>Now we can define a predicate <code>$\mathsf{vp} : \mathbb{Z}^+ \to \{0, 1\}$</code> that determines the validity of a program.</p>
+<ul>
+<li><code>$\mathsf{vp}(\mathbf{c}) = \mathsf{vprec}(V, \mathbf{c})$</code>
+where <code>$V = \mathsf{aggr}(\mathbf{c}, 0, \emptyset)$</code>.</li>
+</ul>
+<p>It is easy to see that the above predicates are computable.</p>
+<div class="definition" style="font-style: normal">
+<b>2. </b>The <em>admissible</em> program space <code>$\mathbb{P}$</code> is the subset of <code>$\hat{\mathbb{P}} := \mathbb{Z}^+ \times \mathbb{Z}^*$</code> whose code sequence is valid. Formally, <code>$\mathbb{P}$</code> is defined as
+<code>$$\mathbb{P} := \{(\mathbf{c}, \mathbf{d}) : \mathbf{c} \in \mathbb{Z}^+, \mathbf{d} \in \mathbb{Z}^*, \mathsf{vp}(\mathbf{c}) = 1\} \subset \hat{\mathbb{P}}.$$</code>
+</div>
+<p>Throughout this page, all programs <code>$P \in \hat{\mathbb{P}}$</code> are assumed to be valid i.e. <code>$P \in \mathbb{P}$</code>.</p>
+<div class="definition" style="font-style: normal">
+<b>3. </b>Two programs <code>$P_1, P_2 \in \mathbb{P}$</code> are said to be equivalent, written <code>$P_1 \equiv_f P_2$</code>, if for all inputs <code>$\mathbf{x} \in \mathbb{Z}^\ast$</code>, it holds that <code>$\mathsf{exec}_f(P_1, \mathbf{x}) = \mathsf{exec}_f(P_2, \mathbf{x})$</code>. The identity filter is assumed when the subscript <code>$f$</code> is omitted.
+</div>
+<h2>Program Transformations</h2>
+<div class="definition" style="font-style: normal">
+<b>4. </b>A program transformation is a function <code>$T : \mathbb{P} \to \mathbb{P}$</code> that maps a valid program <code>$P \in \mathbb{P}$</code>  to another valid program <code>$P' \in \mathbb{P}$</code>. The transformation is said to be <em>functionality-preserving</em> iff <code>$\forall P \in \mathbb{P} \;\; P \equiv T(P)$</code>.
+</div>
+<p>Now we define a partial order relation <code>$\preceq$</code> on the admissible program space in the form of a binary predicate <code>$\mathbb{P} \times \mathbb{P} \to \{0, 1\}$</code>:
+<code>$$P_1 \preceq_f P_2 = \bigwedge_{\mathbf{x} \in \mathbb{Z}^\ast} P_1 \preceq_{f, \mathbf{x}} P_2$$</code>
+where
+<code>$$ P_1 \preceq_{f,\mathbf{x}} P_2 := \begin{cases} 1 &amp; \text{ if } \mathsf{exec}_f(P_1, \mathbf{x}) = \mathsf{exec}_f(P_2, \mathbf{x}) \\ 1 &amp; \text{ if } \mathsf{exec}(P_1, \mathbf{x}) \neq \bot \; \land \; \mathsf{exec}(P_2, \mathbf{x}) \in \{\infty, \bot\} \\ 0 &amp; \text{ otherwise} \\ \end{cases}. $$</code> If the subscript <code>$f$</code> is omitted, it is taken to be the identity function.
+Informally, the fact that <code>$P_1 \preceq P_2$</code> implies that <code>$P_1$</code> is universally (i.e. over <em>all</em> inputs) &quot;at least as safe as&quot; <code>$P_2$</code>.</p>
+<div class="definition" style="font-style: normal">
+<b>5. </b>A transformation <code>$T$</code> is said to be <em>non-weakening</em> with respect to <code>$f$</code> if for all <code>$P \in \mathbb{P}$</code> it holds that <code>$T(P)\preceq_f P$</code>.
+</div>
+<p>The identity transformation is trivially non-weakening. </p>
+<div class="definition" style="font-style: normal">
+<b>6. </b>An <em>instrumentor</em> is a transformation <code>$T$</code> with two essential properties:<ol>
+<li><code>$T$</code> is non-weakening.</li>
+<li><code>$\forall (\mathbf{c}, \mathbf{d}) \in \mathbb{P}\;\;\; |\mathbf{c'}| \geq |\mathbf{c}|$</code> where <code>$(\mathbf{c'}, \mathbf{d'}) \gets T(\mathbf{c}, \mathbf{d})$</code>.</li>
+<li><code>$\exists (\mathbf{c}, \mathbf{d}) \in \mathbb{P}\;\;\; |\mathbf{c'}| &gt; |\mathbf{c}|$</code> where <code>$(\mathbf{c'}, \mathbf{d'}) \gets T(\mathbf{c}, \mathbf{d})$</code>.</li>
+</ol>
+</div>
+<p>Informally, the above properties tell us that an instrumentor must never decrease a program's size and must, at least some of the time, increase a program's size while preserving functionality for all safely terminating programs whereas nothing can be said about unsafe termination. The third condition is necessary to prevent trivial examples of an instrumentor such as the identity transformation, whereas trivial examples such as the transformation that appends a zero (HLT) followed by any arbitrary sequence of valid instructions qualifies as an instrumentor. An instrumentor is a transformation that adds code &quot;without breaking things&quot;.</p>
+<div class="definition" style="font-style: normal">
+<b>7. </b>A transformation <code>$T$</code> is said to be <em>strengthening</em> if for all <code>$P \in \mathbb{P}$</code> the following two properties are satisfied.<ul>
+<li><code>$\mathbf{S.1}$</code>: <code>$\mathsf{exec}(P, \mathbf{x}) = \bot \implies \mathsf{exec}(T(P), \mathbf{x}) \neq \bot \;\; \forall \mathbf{x} \in \mathbb{Z}^*$</code>.</li>
+<li><code>$\mathbf{S.2}$</code>: <code>$T(P) \preceq P$</code> (non-weakening)</li>
+</ul>
+</div>
+<p>On first reading, it may appear that there is some redundancy in the above definition. This is in fact not the case and the following simple lemma elucidates the necessity of both properties S.1 and S.2.</p>
+<div class="lemma" style="font-style: normal">
+<b>1. </b><i><ol>
+<li><code>$S.1 \not\implies S.2$</code></li>
+<li><code>$S.2 \not\implies S.1$</code></li>
+</ol></i>
+</div>
+<div class="proof">
+<p>Suppose <code>$S.1$</code> holds. Now also suppose <code>$\mathsf{exec}(P, \mathbf{x}) \neq \bot$</code> for some program <code>$P$</code> and input <code>$\mathbf{x}$</code>. Now also suppose <code>$M = \mathsf{exec}(P, \mathbf{x}) \in \mathcal{P}(\mathbb{Z} \times \mathbb{Z})$</code>. It may also be the case that <code>$M' = \mathsf{exec}(T(P), \mathbf{x}) \in \mathcal{P}(\mathbb{Z} \times \mathbb{Z})$</code>. Further it may be such that <code>$M \neq M'$</code>, and therefore <code>$T(P) \not\preceq P$</code>. </p>
+<p>Next we turn to the second statement. Assume <code>$S.2$</code> holds. Let <code>$\mathbf{x} \in \mathbb{Z}^*$</code> and <code>$P \in \mathbb{P}$</code> such that <code>$\mathsf{exec}(P, \mathbf{x}) = \mathsf{exec}(T(P), \mathbf{x}) = \bot$</code>. Consequently, this violates <code>$S.1$</code>.</p>
+</div>
+<h3>Screeners</h3>
+<p>It is the class of strengthening instrumentors that are the primary focus of this work.</p>
+<div class="definition" style="font-style: normal">
+<b>8. </b>A <em>screener</em> is a transformation <code>$T : \mathbb{P} \to \mathbb{P}$</code> that is<ul>
+<li>an instrumentor</li>
+<li>strengthening</li>
+</ul>
+</div>
+<p>One of the primary goals of this project is to analyze different types of screener with an aim of maximizing efficiency. We aim to post an update to this page soon.</p>
+<h4>Universal Screeners</h4>
+<p>The notion of a transformation resembles the notion of &quot;sanitizer&quot; in the LLVM project. The well-known LLVM sanitizer known as <em>address sanitizer</em> (ASan) has some similarities to the <em>type</em> of screener we explore in the next post. In particular, the type of screener we explore in the post to follow checks <em>every</em> memory access (i.e. load or store) for safety. We call such a screener (i.e. one that checks <em>every</em> memory access) a <em>universal screener</em>. The asymptotic complexity in terms of number of memory accesses of a transformed program <code>$P' = T(P)$</code> is linearly dependent on <code>$m_P(n)$</code> where <code>$T$</code> is our screener transformation described later and <code>$P \in \mathbb{P}$</code> is a valid program where <code>$m_P(n)$</code> is the (average) number of memory accesses made by program P on inputs of length n. The complexity also depends on another important factor: the data structure used to keep track of valid allocated blocks. Such &quot;bookkeeping&quot; is indispensible and plays an important role in any realization of a screener.</p>
+<p><em>To be continued...</em></p></article></div>
+      </div><footer style='margin-top:32px;'>
+</footer><!DOCTYPE html>
+<script src="js/math_code.js"></script>
+<script async
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+</html>

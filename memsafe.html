@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Memory Safety | HRAM0</title>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="style/prism.css" rel="stylesheet"/>
+<link href="style/theorems.css" rel="stylesheet"/>  
+</head>
+<style>
+blockquote {
+	font-style: italic;
+	color: #555;
+	padding-left: 32px;
+	border-left: 3px solid ;
+}
+
+body {
+  margin: 40px;
+  font-family: Arial, Helvetica, sans-serif;  
+}
+
+.menu {
+    /*min-width: 170px;*/
+    grid-area: menu;
+   font-size: 1.25vw;
+  }
+
+  .content {
+    grid-area: content;
+  }
+
+  .header {
+    grid-area: header;
+  }
+
+
+  .wrapper {
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 15%  85%;
+    grid-template-areas:
+               "....... header"
+               "menu content";
+    background-color: #ffffff;
+    color: #000000;
+  }
+.box {
+  background-color: #EEEEEE;
+  color: #000000;
+  border-radius: 5px;
+  border-style: dashed;  
+  padding: 1.25vw;
+}
+
+.header {
+  background-color: #02994D;
+  color: white;
+  border-color: black;
+}
+
+ul.vertical {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 7vw;
+    /*width: 170px;*/
+    background-color: #f1f1f1;
+}
+
+ul.vertical li a {
+    display: block;
+    color: #000;
+    padding: 0px 0 8px 0px;
+    text-decoration: none;
+    border-bottom: 2px solid #000000;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+tr.row td {
+    border-bottom: 2px solid #000000;
+}
+
+pre {
+    width: 76.5%;
+    border: 2px solid #000000;
+}
+
+ul.vertical li a:hover:not(.active) {
+    background-color: #555;
+    color:white;
+}
+
+ul.vertical a.active {
+    background-color: #02994D;
+    color:white;
+}
+
+
+
+</style>
+<script src="js/prism.js" defer></script>
+
+
+<div class='wrapper'>
+<div class='box header'><b>HRAM0</b> | Model and Toolchain for Research in Memory Safety</div>
+<div class='box menu'>
+<center><ul class='vertical'><li><a href="hram0.html">Home</a></li>
+<li><a href="spec.html">Specification</a></li>
+<li><a href="asm.html">Assembly</a></li>
+<li><a href="source.html">Source</a></li>
+<li><a class='active' href="memsafe.html">Memory Safety</a></li>
+<li><a href="contact.html">Contact</a></li>
+</ul>
+</div>
+</center>
+<div class='box content'><article style='margin-top: 32px;'><h1>Memory Safety</h1><u>Last Updated:</u> <time datetime=2022-06-28T12:31:48>Tuesday 28th June 2022</time><style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+</style>
+<p>The goal of the HRAM0 project is to contribute to research on memory safety in languages like C/C++ that do not have memory management built-in. In particular, we are interested in instrumentation approaches to achieve memory safety. HRAM0 is a model that captures the essential features of programs that allocate/delallocate memory in a similar manner to C (malloc/free) and triggers a special ERROR state if and only if a spatial or temporal safety violalion occurs, and concludes in a HALT state otherwise (assuming the program terminates). Proving safety of programs in theorem provers like Coq is a key goal of this project as is producing efficient transformations that transform a program (which may be unsafe) into one that is guranteed to be safe (and terminate gracefully in the event of violations) via an instrumentation approach. Minimizing the overhead of the instrumented program is a fundamental goal of our project. Below we unambiguously delineate the problem and its range of solutions in a formal manner using the HRAM0 model. The content of these pages is work-in-progress and will be extended and modified over time.</p>
+<h2>Theoretical Aspects</h2>
+<p>These pages contain the results of our research thus far. A prerequisite for reading the following is the formal specification of HRAM0 (see <a href="spec.html">specification</a>). </p>
+<ul>
+<li><a href="char.html">Characterization of Memory Safety</a></li>
+</ul>
+<p><u>Next (planned or unfinished)</u>:</p>
+<ul>
+<li>Universal Screeners</li>
+<li>Probabilistic Correctness and Pointer Tagging</li>
+<li>Selective Screeners: Complexity and Optimizations</li>
+<li>Optimizations via Formal Proof Techniques</li>
+<li>Application to LLVM Sanitizers</li>
+</ul></article></div>
+      </div><footer style='margin-top:32px;'>
+</footer><!DOCTYPE html>
+<script src="js/math_code.js"></script>
+<script async
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+</html>
