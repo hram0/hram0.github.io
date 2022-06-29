@@ -1,0 +1,90 @@
+blockquote {
+	font-style: italic;
+	color: #555;
+	padding-left: 32px;
+	border-left: 3px solid ;
+}
+
+body {
+  margin: 40px;
+  font-family: Arial, Helvetica, sans-serif;  
+}
+
+.menu {
+    /*min-width: 170px;*/
+    grid-area: menu;
+   font-size: 1.25vw;
+  }
+
+  .content {
+    grid-area: content;
+  }
+
+  .header {
+    grid-area: header;
+  }
+
+
+  .wrapper {
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 15%  85%;
+    grid-template-areas:
+               "....... header"
+               "menu content";
+    background-color: #ffffff;
+    color: #000000;
+  }
+.box {
+  background-color: #EEEEEE;
+  color: #000000;
+  border-radius: 5px;
+  border-style: dashed;  
+  padding: 1.25vw;
+}
+
+.header {
+  background-color: #02994D;
+  color: white;
+  border-color: black;
+}
+
+ul.vertical {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 7vw;
+    /*width: 170px;*/
+    background-color: #f1f1f1;
+}
+
+ul.vertical li a {
+    display: block;
+    color: #000;
+    padding: 0px 0 8px 0px;
+    text-decoration: none;
+    border-bottom: 2px solid #000000;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+tr.row td {
+    border-bottom: 2px solid #000000;
+}
+
+pre {
+    width: 76.5%;
+    border: 2px solid #000000;
+}
+
+ul.vertical li a:hover:not(.active) {
+    background-color: #555;
+    color:white;
+}
+
+ul.vertical a.active {
+    background-color: #02994D;
+    color:white;
+}
