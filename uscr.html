@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Universal Screeners | HRAM0</title>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="style/prism.css" rel="stylesheet"/>
+<link href="style/theorems.css" rel="stylesheet"/>  
+</head>
+<style>
+blockquote {
+	font-style: italic;
+	color: #555;
+	padding-left: 32px;
+	border-left: 3px solid ;
+}
+
+body {
+  margin: 40px;
+  font-family: Arial, Helvetica, sans-serif;  
+}
+
+.menu {
+    /*min-width: 170px;*/
+    grid-area: menu;
+   font-size: 1.25vw;
+  }
+
+  .content {
+    grid-area: content;
+  }
+
+  .header {
+    grid-area: header;
+  }
+
+
+  .wrapper {
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 15%  85%;
+    grid-template-areas:
+               "....... header"
+               "menu content";
+    background-color: #ffffff;
+    color: #000000;
+  }
+.box {
+  background-color: #EEEEEE;
+  color: #000000;
+  border-radius: 5px;
+  border-style: dashed;  
+  padding: 1.25vw;
+}
+
+.header {
+  background-color: #02994D;
+  color: white;
+  border-color: black;
+}
+
+ul.vertical {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 7vw;
+    /*width: 170px;*/
+    background-color: #f1f1f1;
+}
+
+ul.vertical li a {
+    display: block;
+    color: #000;
+    padding: 0px 0 8px 0px;
+    text-decoration: none;
+    border-bottom: 2px solid #000000;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+tr.row td {
+    border-bottom: 2px solid #000000;
+}
+
+pre {
+    width: 76.5%;
+    border: 2px solid #000000;
+}
+
+ul.vertical li a:hover:not(.active) {
+    background-color: #555;
+    color:white;
+}
+
+ul.vertical a.active {
+    background-color: #02994D;
+    color:white;
+}
+
+
+
+</style>
+<script src="js/prism.js" defer></script>
+
+
+<div class='wrapper'>
+<div class='box header'><b>HRAM0</b> | Model and Toolchain for Research in Memory Safety</div>
+<div class='box menu'>
+<center><ul class='vertical'><li><a href="/~mclear/hrtst/?page=hram0">Home</a></li>
+<li><a href="/~mclear/hrtst/?page=spec">Specification</a></li>
+<li><a href="/~mclear/hrtst/?page=asm">Assembly</a></li>
+<li><a href="/~mclear/hrtst/?page=source">Source</a></li>
+<li><a href="/~mclear/hrtst/?page=memsafe">Memory Safety</a></li>
+<li><a href="/~mclear/hrtst/?page=contact">Contact</a></li>
+</ul>
+</div>
+</center>
+<div class='box content'><article style='margin-top: 32px;'><h1>Universal Screeners</h1><u>Last Updated:</u> <time datetime=2022-07-22T10:44:08>Friday 22nd July 2022</time><style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+</style>
+<h3>Construction of Universal Screener</h3>
+<p>A prerequisite for reading this page is the preceeding article in this series - <a href="char.html">characterization of memory safety</a>.
+Recall that a <em>screener</em> is a transformation that is both an instrumentor and one that is strenghtening. Furthermore, a screener is <em>universal</em> if it checks <em>every</em> memory access for safety. The asymptotic complexity in terms of number of memory accesses of a transformed program <code>$P' = T(P)$</code> is linearly dependent on <code>$m_P(n)$</code> where <code>$T$</code> is a universal screener and <code>$P \in \mathbb{P}$</code> is a valid program where <code>$m_P(n)$</code> is the (average) number of memory accesses made by program P on inputs of length n. The complexity also depends on another important factor: the data structure used to keep track of valid allocated blocks. Such &quot;bookkeeping&quot; is indispensible and plays an important role in any realization of a screener.</p>
+<p>Constructing a universal screener for HHRAM0 programs involve some technicalities, which we discuss in turn. Firstly, we introduce some useful macros to serve our needs.</p>
+<h4>Useful Macros</h4>
+<p>We now define two important macros which we make ample use of later. They relate to manipulation of a stack, namely the push and pop operations. Both macros assume the stack pointer is stored in register <code>$\mathsf{r1}$</code> and that the register <code>$\mathsf{r2}$</code> contains the constant -1.</p>
+<ul>
+<li><strong>push</strong> <code>$z$</code>:
+<ul>
+<li>sto <code>$z, \mathsf{r1}$</code> // *sp := z    </li>
+<li>add <code>$\mathsf{r2}, \mathsf{r1}, \mathsf{r1}$</code> // sp := sp - 1</li>
+</ul></li>
+<li><strong>pop</strong> <code>$z$</code>:
+<ul>
+<li>sub <code>$\mathsf{r2}, \mathsf{r1}, \mathsf{r1}$</code> // sp := sp + 1    </li>
+<li>lod <code>$\mathsf{r1}, z$</code> // z := *sp</li>
+</ul></li>
+<li><strong>popx</strong>:
+<ul>
+<li>sub <code>$\mathsf{r2}, \mathsf{r1}, \mathsf{r1}$</code> // sp := sp + 1</li>
+</ul></li>
+</ul>
+<h4>TIncRegs Transformation</h4>
+<p>In this section we construct a transformation that increments all register numbers used in a program by some specified <code>$k$</code> so that the resulting program does not disturb the lower <code>$k$</code> registers (<code>$\mathsf{r0}, \mathsf{r1}, \hdots$</code> etc.) which are reserved for special purposes such as the stack pointer. We now describe how this transformation works. Firstly, it requires that <code>$k \geq 4$</code> and the first <code>$k$</code> registers are setup as follows as a prerequisite for the correctness of the program: <code>$\mathsf{r3}$</code> is a pointer to a block of memory of at least <code>$k + 1$</code> words, <code>$\mathsf{r1}$</code> is the stack pointer and <code>$\mathsf{r2}$</code> contains the constant -1 (see PUSH/POP macros above). Code is inserted to multiplex the contents of <code>$\mathsf{r\rho - 1}$</code> (concretely r13 when <code>$\rho = 14$</code>) between <code>$k + 1$</code> different values which are stored in the block of memory pointed to by <code>$\mathsf{r3}$</code> and swapped in/out as required.</p>
+<p>Consider the following prepend transformation <code>$\mathsf{TPre}$</code>:</p>
+<ul>
+<li><code>$\mathbf{TPre}_{P_{\mathsf{pre}}}(P)$</code>:
+<ul>
+<li>Parss <code>$(\mathbf{c}_{\mathsf{pre}}, \mathbf{d}_{\mathsf{pre}}) \gets P_{\mathsf{pre}}$</code></li>
+<li>Parse <code>$(\mathbf{c}, \mathbf{d}) \gets P$</code></li>
+<li>Return <code>$P' := (\mathbf{c}_{\mathsf{pre}} \parallel \mathbf{c}, \mathbf{d}_{\mathsf{pre}} \parallel \mathbf{d})$</code></li>
+</ul></li>
+</ul>
+<p>Furthermore, consider the following setup program <code>$P_\mathsf{setup}$</code>:</p>
+<p><strong>Program </strong><code>$P_{\mathsf{setup}}$</code>:</p>
+<pre><code class="language-asm">start:
+    put T, r2 // where T &gt; k
+    mal r2, r3 // system memory
+    put S, r2 // where S is stack size
+    mal r2, r1
+    sto r1, r3 // save stack block starting address in system memory
+    add r2, r1, r1 // r1 is now stack pointer
+    put -1, r2 // this convention is followed unvaryingly
+    add r2, r1, r1 // subtract 1 from stack pointer to correct start of stack</code></pre>
+<p>In the discussion to follow, our definitions rely heavily on the notion of program equivalence. However, the astute reader may observe that the equivalences do not hold when employing our default filter function, defined in the <a href="char.html">previous article</a>. Therefore, we must specify a filter function that is of import here and which is to be implicitly understood as being applicable in all uses of program equivalence for the remainder of this article. This function <code>$f^\ast : \mathcal{P}(\mathbb{Z} \times \mathbb{Z}) \to  \mathcal{P}(\mathbb{Z} \times \mathbb{Z})$</code> is defined thus
+<code>$$f^\ast(M) = \{(i, M(i)) : i \geq 0, \bigwedge_{j = 0}^{i} M(j)\}$$</code>
+and truncates a memory relation to the lower contiguous range of addreses, consisting of the static data together with the program input. As such, the heap; that is, the dynamically-allocated blocks are ignored (note that owing to the fact that <code>$\zeta &gt; 0$</code> it means a &quot;gap&quot; separates the defined lower memory from the dynamically-allocated blocks).  Henceforth, for the remainder of this article, the default filter function is understood to be <code>$f^\ast$</code>.</p>
+<p>An invariant that TIncRegs must necessarily satisfy is as follows. Let <code>$k \geq 4$</code> be an integer. Then for all <code>$P \in \mathbb{P}$</code> such that <code>$\mathsf{TPre}_{P_{\mathsf{mal}, u}}(P) \equiv P$</code> it holds that:
+<code>$$ (\mathsf{TPre}_{P_{\mathsf{setup}}} \circ \mathsf{TIncRegs}_k) (P) \equiv P.$$</code> where <code>$P_{\mathsf{mal}, u}$</code> is defined thus</p>
+<p><strong>Program </strong><code>$P_{\mathsf{mal}, u}$</code>:</p>
+<pre><code class="language-asm">start:
+    put u, r0 // alloacate region of size u
+    put 0, r0 // restore r0 to 0 (so appended program gets usual environment)</code></pre>
+<p>A spurious program is one that accesses memory at one or more absolute addresses; that is, an address that is not relative to any of the blocks the program has allocated, excepting of course the region of statically-allocated data and program input. Our instrumentation approach fails with spurious program because we cannot ncessarily preserve their functionality when modifying the program to keep track of safe/unsafe memory regions, since allocating space for a runtime management system affects the program's behavior.</p>
+<p>A program is said to be <em>reflective</em> if the program counter (PC) register is an operand of one or more of its instructions. It is difficult for instrumentors to preserve the functionality of relfective programs. Therefore, we preclude such programs from consideration. We term the set of programs <code>$\tilde{\mathbb{P}} := \{P \in \mathbb{P} : \mathsf{nr}(P) \; \land \; P \equiv \mathsf{TPre}_{P_{\mathsf{mal}, u}}(P),\; \forall u \in \mathbb{Z}_{+}\} $</code> <em>instrumentation-friendly</em> programs; that is, programs that are both <em>non-spurious</em> and <em>non-reflective</em>, where <code>$\mathsf{nr} : \mathbb{P} \to \{0, 1\}$</code> is a predicate that determines whether a program is non-reflective,</p>
+<p>Note that the concatentaion operation <code>$\parallel$</code> is understood to intelligently produces a resultant program such that all branches/calls to targets in the second program (right operand) are translated by the size of the first program (left operand).</p>
+<p><code>$\mathbf{TIncRegs}_k(P)$</code>:</p>
+<ul>
+<li><code>$(\mathbf{c}, \mathbf{d}) \gets P$</code> </li>
+<li><code>$\mathsf{sel} \gets 0$</code> </li>
+<li>For each instruction <code>$\mathsf{instr} \in P$</code>: 
+<ul>
+<li><code>$\mathbf{c'} \gets \epsilon$</code> </li>
+<li><code>$\mathsf{last} \gets 0$</code> </li>
+<li><code>$\mathsf{start\_index} \gets 0$</code> </li>
+<li>If <code>$\mathsf{instr.opcode} = \mathsf{PUT}$</code> or <code>$\mathsf{instr.opcode} = \mathsf{CAL}$</code>: </li>
+<li>
+<ul>
+<li><code>$\mathsf{start\_index} \gets 1$</code></li>
+</ul>
+</li>
+<li><code>$N \gets \alpha(\mathsf{instr.opcode})$</code></li>
+<li>If <code>$\mathsf{instr.opcode} = \mathsf{BRN}$</code></li>
+<li>
+<ul>
+<li><code>$N \gets N - 1$</code></li>
+</ul>
+</li>
+<li>For <code>$\mathsf{start\_index} \leq i &lt; N$</code>: </li>
+<li>
+<ul>
+<li><code>$r \gets \mathsf{instr.operands}[i]$</code> </li>
+</ul>
+</li>
+<li>
+<ul>
+<li>If <code>$r &lt; \rho \; \land \; (r + k) \geq \rho - 1$</code>: </li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li><code>$t \gets (r + k) - (\rho - 1)$</code> </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li><code>$r = \rho - 1$</code> </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>If <code>$t \neq \mathsf{sel}$</code>: </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>Choose some register <code>$s \neq r$</code> and <code>$s \geq k$</code> </li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>If <code>$i &lt; \alpha(\mathsf{instr.opcode}) - 1 \; \land \; \mathsf{last} = 1$</code>: </li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>Choose some register <code>$r' \neq r$</code> and <code>$r' \neq \mathsf{instr.operands}[i + 1]$</code> and <code>$r' \geq k$</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>Append the following code to <code>$\mathbf{c'}$</code>
+<pre><code class="language-asm">push r'
+push s
+put t, s
+add s, r3, s
+sub r2, s, s // skip stack address (s += 1)
+lod s, r'
+pop s</code></pre></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><code>$\hat{\mathbf{c}} \gets \mathsf{Assemble}(\text{pop } r')$</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><code>$r \gets r'$</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>Else:</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>Append the following code to <code>$\mathbf{c'}$</code>
+<pre><code class="language-asm">push s
+put sel, s
+add s, r0, s
+sto r, s
+put t, s
+add s, r0, s
+sub r2, s, s // skip stack address (s += 1)
+lod s, r
+pop s</code></pre></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><code>$\mathsf{last} \gets 1$</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li><code>$\mathsf{sel} \gets t$</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>Else if <code>$r &lt; \rho$</code>:</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li><code>$r \gets r + k$</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li><code>$\mathsf{instr.operands}[i] \gets r$</code></li>
+</ul>
+</li>
+<li>Append <code>$\mathsf{instr}$</code> to <code>$\mathbf{c'}$</code></li>
+<li><code>$\mathbf{c'} \gets \mathbf{c'} \parallel \hat{\mathbf{c}}$</code>    </li>
+</ul></li>
+<li>Return <code>$P' := (\mathbf{c'}, \mathbf{d})$</code></li>
+</ul>
+<h4>Address Manager Definition</h4>
+<div class="definition" style="font-style: normal">
+<b>1. </b>An <em>address manager</em> is a tuple of polynomial-time algorithms <code>$(\mathsf{Init}, \mathsf{Malloc}, \mathsf{Free}, \mathsf{Access}, \mathsf{Finalize})$</code> defined as follows:<ul>
+<li><code>$\mathsf{Init}:$</code> Takes as input a program in <code>$\tilde{\mathbb{P}}$</code> (the program to instrument) and a register number between 0 and <code>$\rho$</code> (containing stack pointer) and a register number between 0 and <code>$\rho$</code> (to store pointer to address manager program state) and outputs a tuple containing the address manager context and the instrumented code sequence for initialization.</li>
+<li><code>$\mathsf{Malloc}:$</code> Takes as input address manager context and outputs the instrumented code sequence for a subroutine that is called for memory allocations. This subroutine takes two parameters, the number of words to allocate and the address of the newly allocated block.</li>
+<li><code>$\mathsf{Free}:$</code> Takes as input address manager context and outputs the instrumented code sequence for a subroutine that is called when memory is freed. This subroutine takes one parameter, the starting address of the block to free.</li>
+<li><code>$\mathsf{Check}:$</code> Takes as input address manager context and outputs the instrumented code sequence for a subroutine that is called for memory address checks. This subroutine takes two parameters that mark the address range to check, namely the starting address (inclusive) and the ending address. The subroutine returns 0 iff the address range is safe and returns -1 iff the address range is unsafe.</li>
+<li><code>$\mathsf{Finalize}:$</code> Takes as input address manager context and outputs the instrumented code sequence for a subroutine that is called when the program aborts. This subroutine takes no parameters.</li>
+</ul>
+</div>
+<p>The calling convention we use stipulates that arguments are pushed on to the stack from right to left; that is, when calling a function with two arguments, the second argument is pushed first followed by the second etc. The arguments are guaranteed to be popped by the function. Furthermore, the return value is passed in r0.</p>
+<p>Now we define the fundamental condition of validity for an instance of address manager.</p>
+<div class="definition" style="font-style: normal">
+<b>2. </b>An instance of address manager <code>$\mathcal{AM}$</code> satisfies the validity condition if and only if<ul>
+<li><strong>AM.1</strong>: <code>$\mathsf{UScreener}(\mathcal{AM}, \cdot) : \tilde{\mathbb{P}} \to \tilde{\mathbb{P}}$</code> is a strengthening transformation.</li>
+</ul>
+</div>
+<p>where <code>$\mathsf{UScreener}$</code> is a screener, which will be described now.</p>
+<h4>UScreener Construction</h4>
+<p>We now present our construction of a universal screener that makes use of an instance of address manager. The high-level overview of UScreener is as follows. Firstly, it performs initialization. It calls the algorithms of the address manager instance <code>$\mathcal{AM}$</code> to get the instrumented code for each core subroutine: malloc, free, check and finalize. This collection of subroutines is aggregated and the offsets for each subroutine are stored so that they may easily be invoked. Then a pass is made over every instruction in <code>$P'$</code>, which is the result of applying the transformation above <code>$\mathsf{TIncRegs}$</code> to the input program <code>$P$</code>. If the instruction is a MAL (malloc) or FRE (free), each is is suffixed with a call to the malloc subroutine or free subroutine respectively. If the instruction is HLT, it is prefaced with a call to a cleanup subroutine (which calls the address manager's finalize subroutine). If the instruction is a load/store, code is added to call the address manager's check subroutine and if it returns -1 specific code to fail gracefully is executed whereas if it returns 0, then the load/store instruction is added. Finally, any other instruction is appended to the resulting code unmodified. The key point to remember is that this is a <em>universal</em> screener and thus, <em>every</em> load/store is checked for safety. </p>
+<p><code>$\mathbf{UScreener}$</code>(<code>$\mathcal{AM}$</code>, P);</p>
+<ul>
+<li><code>$\mathbf{c'} \gets \epsilon$</code> </li>
+<li>Parse <code>$(\mathbf{c}, \mathbf{d}) \gets P$</code> </li>
+<li><code>$(\hat{\mathbf{c}}, \epsilon) \gets P_{\mathsf{setup}, T:=7}$</code> </li>
+<li><code>$\mathbf{c'} \gets \mathbf{c'} \parallel \hat{\mathbf{c}}$</code> </li>
+<li>
+</li>
+<li><code>$P' \gets \mathsf{TIncRegs}(P, 5)$</code> </li>
+<li>
+</li>
+<li><code>$(\mathsf{ctx}, \hat{\mathbf{c}}) \gets \mathcal{AM}.\mathsf{Init}(P', \mathsf{r1}, \mathsf{r4})$</code> </li>
+<li><code>$\mathbf{c'} \gets \mathbf{c'} \parallel \hat{\mathbf{c}}$</code> </li>
+<li><code>$\mathsf{malloc\_sub\_offset} \gets |\mathbf{c'}| + 3$</code> // branch is to be appended (3 words) </li>
+<li><code>$\mathbf{sub} \gets \mathcal{AM}.\mathsf{Malloc}(\mathsf{ctx})$</code> </li>
+<li><code>$\mathbf{subs} \gets \mathbf{sub}$</code> </li>
+<li><code>$\mathsf{free\_sub\_offset} \gets \mathsf{malloc\_sub\_offset} + |\mathbf{sub}|$</code> </li>
+<li><code>$\mathbf{sub} \gets \mathcal{AM}.\mathsf{Free}(\mathsf{ctx})$</code> </li>
+<li><code>$\mathbf{subs} \gets \mathbf{subs} \parallel \mathbf{sub}$</code></li>
+<li><code>$\mathsf{check\_sub\_offset} \gets \mathsf{free\_sub\_offset} + |\mathbf{sub}|$</code> </li>
+<li><code>$\mathbf{sub} \gets \mathcal{AM}.\mathsf{Check}(\mathsf{ctx})$</code> </li>
+<li><code>$\mathbf{subs} \gets \mathbf{subs} \parallel \mathbf{sub}$</code></li>
+<li><code>$\mathsf{finalize\_sub\_offset} \gets \mathsf{check\_sub\_offset} + |\mathbf{sub}|$</code> </li>
+<li><code>$\mathbf{sub} \gets \mathcal{AM}.\mathsf{Finalize}(\mathsf{ctx})$</code> </li>
+<li><code>$\mathbf{subs} \gets \mathbf{subs} \parallel \mathbf{sub}$</code></li>
+<li><code>$\mathsf{cleanup\_sub\_offset} \gets \mathsf{finalize\_sub\_offset} + |\mathbf{sub}|$</code></li>
+<li>
+</li>
+<li>// Below is the code for cleanup subroutine</li>
+<li><code>$\mathbf{subs} \gets \mathbf{subs} \parallel \mathsf{Assemble}($</code> 
+<ul>
+<li>cal <code>$\mathsf{finalize\_sub\_offset}$</code> </li>
+<li>lod <code>$\mathsf{r3}, \mathsf{r1}$</code> //  get start of stack block </li>
+<li>fre <code>$\mathsf{r1}$</code> </li>
+<li>fre <code>$\mathsf{r3}$</code></li>
+<li>ret</li>
+</ul></li>
+<li>) </li>
+<li><code>$\mathsf{postsubs\_offset} \gets \mathsf{malloc\_sub\_offset} + |\mathbf{subs}|$</code> </li>
+<li><code>$\mathbf{c'} \gets \mathbf{c'} \parallel \mathsf{Assemble}($</code> 
+<ul>
+<li>brn <code>$\mathsf{r2}, \mathsf{postsubs\_offset}$</code> // jump over subroutines </li>
+</ul></li>
+<li>) </li>
+<li><code>$\mathbf{c'} \gets \mathbf{c'} \parallel \mathbf{subs}$</code> </li>
+<li>
+</li>
+<li>For each instruction <code>$\mathsf{instr} \in P'$</code>: 
+<ul>
+<li>If <code>$\mathsf{instr.opcode} = \text{MAL}$</code>: </li>
+<li>
+<ul>
+<li><code>$\mathbf{c'} \gets \mathbf{c'} \parallel \mathsf{Assemble}($</code> </li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>push <code>$\mathsf{instr.operands}[0]$</code> </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>) </li>
+</ul>
+</li>
+<li>
+<ul>
+<li>Append <code>$\mathsf{instr}$</code> to <code>$\mathbf{c'}$</code> </li>
+</ul>
+</li>
+<li>
+<ul>
+<li><code>$\mathbf{c'} \gets \mathbf{c'} \parallel \mathsf{Assemble}($</code> </li>
+</ul>
+</li>
+<li>
+<ul>
+<li>*push <code>$\mathsf{instr.operands}[1]$</code> </li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>cal <code>$\mathsf{malloc\_sub\_offset}$</code> </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>) </li>
+</ul>
+</li>
+<li>Else If <code>$\mathsf{instr.opcode} = \text{FRE}$</code>: </li>
+<li>
+<ul>
+<li>Append <code>$\mathsf{instr}$</code> to <code>$\mathbf{c'}$</code> </li>
+</ul>
+</li>
+<li>
+<ul>
+<li><code>$\mathbf{c'} \gets \mathbf{c'} \parallel \mathsf{Assemble}($</code> </li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>push <code>$\mathsf{instr.operands}[0]$</code> </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>cal <code>$\mathsf{free\_sub\_offset}$</code> </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>)  </li>
+</ul>
+</li>
+<li>Else If <code>$\mathsf{instr.opcode} \in \{\text{LOD},\text{STO}\}$</code>:</li>
+<li>
+<ul>
+<li><code>$j \gets 0$</code> </li>
+</ul>
+</li>
+<li>
+<ul>
+<li>If <code>$\mathsf{instr.opcode} = \text{STO}:$</code> </li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li><code>$j \gets 1$</code> </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li><code>$\mathbf{c'} \gets \mathbf{c'} \parallel \mathsf{Assemble}($</code> </li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>push <code>$\mathsf{instr.operands}[j]$</code> // start address </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>sub <code>$\mathsf{r2}, \mathsf{instr.operands}[j], r0$</code> </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>push r0 // end address is start address + 1 (exclusive) </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>cal <code>$\mathsf{check\_sub\_offset}$</code> // check returns -1 if unsafe</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>brn <code>$\mathsf{r0}, \mathsf{exit\_gracefully}$</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>) </li>
+</ul>
+</li>
+<li>
+<ul>
+<li>Append <code>$\mathsf{instr}$</code> to <code>$\mathbf{c'}$</code> </li>
+</ul>
+</li>
+<li>Else If <code>$\mathsf{instr.opcode} = \text{HLT}$</code>:</li>
+<li>
+<ul>
+<li><code>$\mathbf{c'} \gets \mathbf{c'} \parallel \mathsf{Assemble}($</code> </li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>cal <code>$\mathsf{cleanup\_sub\_offset}$</code> </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>) </li>
+</ul>
+</li>
+<li>
+<ul>
+<li>Append <code>$\mathsf{instr}$</code> to <code>$\mathbf{c'}$</code> </li>
+</ul>
+</li>
+<li>Else: </li>
+<li>
+<ul>
+<li>Append <code>$\mathsf{instr}$</code> to <code>$\mathbf{c'}$</code> </li>
+</ul>
+</li>
+</ul></li>
+<li><code>$\mathbf{c'} \gets \mathbf{c'} \parallel \mathsf{Assemble}($</code>
+<ul>
+<li>exit_gracefully: </li>
+<li>
+<ul>
+<li>cal <code>$\mathsf{cleanup\_sub\_offset}$</code></li>
+</ul>
+</li>
+<li>
+<ul>
+<li>hlt</li>
+</ul>
+</li>
+</ul></li>
+<li>) </li>
+<li>Return <code>$(\mathbf{c}',\mathbf{d})$</code></li>
+</ul>
+<h4>Instances of Address Manager</h4>
+<p>An address manager can be realized in different ways depending on various efficiency trade-offs provided by the underlying data structure used and its associated algorithms. Firstly, we list the complexity measures that we use, all of which have average-case and worst-case variants:</p>
+<ul>
+<li><code>$\mathsf{al}_P(n)$</code>: the number of blocks allocated by program <code>$P$</code> as a function of input size <code>$n$</code>.</li>
+<li><code>$s_P(n)$</code>: space complexity; a measure of the amount of memory allocated by <code>$P$</code> (the sum of the size of every allocated block).</li>
+<li><code>$m_P(n)$</code>; number of memory accesses (loads/stores) made by program <code>$P$</code>.</li>
+</ul>
+<p>We use <code>$m_P(n)$</code> as a rough measure of the runtime complexity as it correlelates highly with the latter, denoted by <code>$t_P(n)$</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Data Structure</th>
+<th style="text-align: center;">Safety Check Time</th>
+<th style="text-align: center;">Space Overhead</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Trie</td>
+<td style="text-align: center;"><code>$O(\log{s_P(n)})$</code></td>
+<td style="text-align: center;"><code>$O(\mathsf{al}_P(n))$</code></td>
+</tr>
+<tr>
+<td>Shadow Memory / Hash Table</td>
+<td style="text-align: center;"><code>$O(1)$</code></td>
+<td style="text-align: center;"><code>$O(s_P(n))$</code></td>
+</tr>
+<tr>
+<td>Binary Search Tree</td>
+<td style="text-align: center;"><code>$O(\log{\mathsf{al}_P(n)})$</code></td>
+<td style="text-align: center;"><code>$O(\mathsf{al}_P(n))$</code></td>
+</tr>
+<tr>
+<td>Linked List</td>
+<td style="text-align: center;"><code>$O(\mathsf{al}_P(n))$</code></td>
+<td style="text-align: center;"><code>$O(\mathsf{al}_P(n))$</code></td>
+</tr>
+</tbody>
+</table>
+<p>The best choice overall that balances memory consumption with low runtime for checks is via a binary search tree.</p></article></div>
+      </div><footer style='margin-top:32px;'>
+</footer><!DOCTYPE html>
+<script src="js/math_code.js"></script>
+<script async
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+</html>
