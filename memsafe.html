@@ -107,15 +107,14 @@ ul.vertical a.active {
 <div class='wrapper'>
 <div class='box header'><b>HRAM0</b> | Model and Toolchain for Research in Memory Safety</div>
 <div class='box menu'>
-<center><ul class='vertical'><li><a href="/~mclear/hrtst/?page=hram0">Home</a></li>
-<li><a href="/~mclear/hrtst/?page=spec">Specification</a></li>
-<li><a href="/~mclear/hrtst/?page=asm">Assembly</a></li>
-<li><a href="/~mclear/hrtst/?page=source">Source</a></li>
-<li><a class='active' href="/~mclear/hrtst/?page=memsafe">Memory Safety</a></li>
-<li><a href="/~mclear/hrtst/?page=contact">Contact</a></li>
+<center><ul class='vertical'><li><a href="hram0.html">Home</a></li>
+<li><a href="spec.html">Specification</a></li>
+<li><a href="asm.html">Assembly</a></li>
+<li><a href="source.html">Source</a></li>
+<li><a class='active' href="memsafe.html">Memory Safety</a></li>
+<li><a href="contact.html">Contact</a></li>
 </ul>
 </div>
-</center>
 <div class='box content'><article style='margin-top: 32px;'><h1>Memory Safety</h1><u>Last Updated:</u> <time datetime=2022-07-22T10:48:18>Friday 22nd July 2022</time><style>
 table, th, td {
   border: 1px solid black;
@@ -124,7 +123,7 @@ table, th, td {
 </style>
 <p>The goal of the HRAM0 project is to contribute to research on memory safety in languages like C/C++ that do not have memory management built-in. In particular, we are interested in instrumentation approaches to achieve memory safety. HRAM0 is a model that captures the essential features of programs that allocate/delallocate memory in a similar manner to C (malloc/free) and triggers a special ERROR state if and only if a spatial or temporal safety violalion occurs, and concludes in a HALT state otherwise (assuming the program terminates). Proving safety of programs in theorem provers like Coq is a key goal of this project as is producing efficient transformations that transform a program (which may be unsafe) into one that is guranteed to be safe (and terminate gracefully in the event of violations) via an instrumentation approach. Minimizing the overhead of the instrumented program is a fundamental goal of our project. Below we unambiguously delineate the problem and its range of solutions in a formal manner using the HRAM0 model. The content of these pages is work-in-progress and will be extended and modified over time.</p>
 <h2>Theoretical Aspects</h2>
-<p>These pages contain the results of our research thus far. A prerequisite for reading the following is the formal specification of HRAM0 (see <a href="?page=spec">specification</a>). </p>
+<p>These pages contain the results of our research thus far. A prerequisite for reading the following is the formal specification of HRAM0 (see <a href="spec.html">specification</a>). </p>
 <ul>
 <li><a href="char.html">Characterization of Memory Safety</a></li>
 <li>Families of Programs (unfinished)</li>
