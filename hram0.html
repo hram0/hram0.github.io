@@ -107,12 +107,12 @@ ul.vertical a.active {
 <div class='wrapper'>
 <div class='box header'><b>HRAM0</b> | Model and Toolchain for Research in Memory Safety</div>
 <div class='box menu'>
-<center><ul class='vertical'><li><a class='active' href="/~mclear/hrtst/?page=hram0">Home</a></li>
-<li><a href="/~mclear/hrtst/?page=spec">Specification</a></li>
-<li><a href="/~mclear/hrtst/?page=asm">Assembly</a></li>
-<li><a href="/~mclear/hrtst/?page=source">Source</a></li>
-<li><a href="/~mclear/hrtst/?page=memsafe">Memory Safety</a></li>
-<li><a href="/~mclear/hrtst/?page=contact">Contact</a></li>
+<center><ul class='vertical'><li><a class='active' href="hram0.html">Home</a></li>
+<li><a href="spec.html">Specification</a></li>
+<li><a href="asm.html">Assembly</a></li>
+<li><a href="source.html">Source</a></li>
+<li><a href="memsafe.html">Memory Safety</a></li>
+<li><a href="contact.html">Contact</a></li>
 </ul>
 </div>
 </center>
@@ -126,7 +126,7 @@ ul.vertical a.active {
 <li>Be sufficiently simple to facilitate automated reasoning / proof checking.</li>
 <li>Provide a complexity-theoretic model where it is straightforward to measure complexity as a function of input size.</li>
 </ol>
-<p>The project is quite simply a work in-progress. We have endeavored to meet the above criteria in the current design, as presented in the <a href="?page=spec">specification</a>. The simplicity of HRAM0 makes it possibly well-suited to proof checking and automated reasoning. Many of the features (or limitations) of HRAM0 were chosen with this in mind. For example, indirect branching is not supported so one can only branch to constant addresses, thereby simplifying control-flow analysis. The instruction set equivalent of &quot;syntactic sugar&quot; is discernible from the inclusion of the CAL and RET instructions.</p>
+<p>The project is quite simply a work in-progress. We have endeavored to meet the above criteria in the current design, as presented in the <a href="spec.html">specification</a>. The simplicity of HRAM0 makes it possibly well-suited to proof checking and automated reasoning. Many of the features (or limitations) of HRAM0 were chosen with this in mind. For example, indirect branching is not supported so one can only branch to constant addresses, thereby simplifying control-flow analysis. The instruction set equivalent of &quot;syntactic sugar&quot; is discernible from the inclusion of the CAL and RET instructions.</p>
 <h1>Developed So Far</h1>
 <ol>
 <li>An assembler to transform programs written in HRAM0 assembly into &quot;machine code&quot;.</li>
