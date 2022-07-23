@@ -116,7 +116,7 @@ ul.vertical a.active {
 </ul>
 </div>
 </center>
-<div class='box content'><article style='margin-top: 32px;'><h1>Universal Screeners</h1><u>Last Updated:</u> <time datetime=2022-07-22T10:44:08>Friday 22nd July 2022</time><style>
+<div class='box content'><article style='margin-top: 32px;'><h1>Universal Screeners</h1><u>Last Updated:</u> <time datetime=2022-07-23T09:20:02>Saturday 23rd July 2022</time><style>
 table, th, td {
   border: 1px solid black;
   border-collapse: collapse;
@@ -126,7 +126,7 @@ table, th, td {
 <p>A prerequisite for reading this page is the preceeding article in this series - <a href="char.html">characterization of memory safety</a>.
 Recall that a <em>screener</em> is a transformation that is both an instrumentor and one that is strenghtening. Furthermore, a screener is <em>universal</em> if it checks <em>every</em> memory access for safety. The asymptotic complexity in terms of number of memory accesses of a transformed program <code>$P' = T(P)$</code> is linearly dependent on <code>$m_P(n)$</code> where <code>$T$</code> is a universal screener and <code>$P \in \mathbb{P}$</code> is a valid program where <code>$m_P(n)$</code> is the (average) number of memory accesses made by program P on inputs of length n. The complexity also depends on another important factor: the data structure used to keep track of valid allocated blocks. Such &quot;bookkeeping&quot; is indispensible and plays an important role in any realization of a screener.</p>
 <p>Constructing a universal screener for HHRAM0 programs involve some technicalities, which we discuss in turn. Firstly, we introduce some useful macros to serve our needs.</p>
-<h4>Useful Macros</h4>
+<h4>Preliminaries</h4>
 <p>We now define two important macros which we make ample use of later. They relate to manipulation of a stack, namely the push and pop operations. Both macros assume the stack pointer is stored in register <code>$\mathsf{r1}$</code> and that the register <code>$\mathsf{r2}$</code> contains the constant -1.</p>
 <ul>
 <li><strong>push</strong> <code>$z$</code>:
@@ -144,8 +144,6 @@ Recall that a <em>screener</em> is a transformation that is both an instrumentor
 <li>sub <code>$\mathsf{r2}, \mathsf{r1}, \mathsf{r1}$</code> // sp := sp + 1</li>
 </ul></li>
 </ul>
-<h4>TIncRegs Transformation</h4>
-<p>In this section we construct a transformation that increments all register numbers used in a program by some specified <code>$k$</code> so that the resulting program does not disturb the lower <code>$k$</code> registers (<code>$\mathsf{r0}, \mathsf{r1}, \hdots$</code> etc.) which are reserved for special purposes such as the stack pointer. We now describe how this transformation works. Firstly, it requires that <code>$k \geq 4$</code> and the first <code>$k$</code> registers are setup as follows as a prerequisite for the correctness of the program: <code>$\mathsf{r3}$</code> is a pointer to a block of memory of at least <code>$k + 1$</code> words, <code>$\mathsf{r1}$</code> is the stack pointer and <code>$\mathsf{r2}$</code> contains the constant -1 (see PUSH/POP macros above). Code is inserted to multiplex the contents of <code>$\mathsf{r\rho - 1}$</code> (concretely r13 when <code>$\rho = 14$</code>) between <code>$k + 1$</code> different values which are stored in the block of memory pointed to by <code>$\mathsf{r3}$</code> and swapped in/out as required.</p>
 <p>Consider the following prepend transformation <code>$\mathsf{TPre}$</code>:</p>
 <ul>
 <li><code>$\mathbf{TPre}_{P_{\mathsf{pre}}}(P)$</code>:
@@ -166,18 +164,21 @@ Recall that a <em>screener</em> is a transformation that is both an instrumentor
     add r2, r1, r1 // r1 is now stack pointer
     put -1, r2 // this convention is followed unvaryingly
     add r2, r1, r1 // subtract 1 from stack pointer to correct start of stack</code></pre>
+<h4>Instrumentation-Friendly Programs</h4>
 <p>In the discussion to follow, our definitions rely heavily on the notion of program equivalence. However, the astute reader may observe that the equivalences do not hold when employing our default filter function, defined in the <a href="char.html">previous article</a>. Therefore, we must specify a filter function that is of import here and which is to be implicitly understood as being applicable in all uses of program equivalence for the remainder of this article. This function <code>$f^\ast : \mathcal{P}(\mathbb{Z} \times \mathbb{Z}) \to  \mathcal{P}(\mathbb{Z} \times \mathbb{Z})$</code> is defined thus
 <code>$$f^\ast(M) = \{(i, M(i)) : i \geq 0, \bigwedge_{j = 0}^{i} M(j)\}$$</code>
 and truncates a memory relation to the lower contiguous range of addreses, consisting of the static data together with the program input. As such, the heap; that is, the dynamically-allocated blocks are ignored (note that owing to the fact that <code>$\zeta &gt; 0$</code> it means a &quot;gap&quot; separates the defined lower memory from the dynamically-allocated blocks).  Henceforth, for the remainder of this article, the default filter function is understood to be <code>$f^\ast$</code>.</p>
-<p>An invariant that TIncRegs must necessarily satisfy is as follows. Let <code>$k \geq 4$</code> be an integer. Then for all <code>$P \in \mathbb{P}$</code> such that <code>$\mathsf{TPre}_{P_{\mathsf{mal}, u}}(P) \equiv P$</code> it holds that:
-<code>$$ (\mathsf{TPre}_{P_{\mathsf{setup}}} \circ \mathsf{TIncRegs}_k) (P) \equiv P.$$</code> where <code>$P_{\mathsf{mal}, u}$</code> is defined thus</p>
+<p>A spurious program is one that accesses memory at one or more absolute addresses; that is, an address that is not relative to any of the blocks the program has allocated, excepting of course the region of statically-allocated data and program input. Our instrumentation approach fails with spurious program because we cannot ncessarily preserve their functionality when modifying the program to keep track of safe/unsafe memory regions, since allocating space for a runtime management system affects the program's behavior. A program <code>$P$</code> is non-spurious iff <code>$\mathsf{TPre}_{P_{\mathsf{mal}, u}}(P) \equiv P$</code> for <em>any</em> choice of <code>$u$</code> where <code>$P_{\mathsf{mal}, u}$</code> is defined thus</p>
 <p><strong>Program </strong><code>$P_{\mathsf{mal}, u}$</code>:</p>
 <pre><code class="language-asm">start:
     put u, r0 // alloacate region of size u
     put 0, r0 // restore r0 to 0 (so appended program gets usual environment)</code></pre>
-<p>A spurious program is one that accesses memory at one or more absolute addresses; that is, an address that is not relative to any of the blocks the program has allocated, excepting of course the region of statically-allocated data and program input. Our instrumentation approach fails with spurious program because we cannot ncessarily preserve their functionality when modifying the program to keep track of safe/unsafe memory regions, since allocating space for a runtime management system affects the program's behavior.</p>
-<p>A program is said to be <em>reflective</em> if the program counter (PC) register is an operand of one or more of its instructions. It is difficult for instrumentors to preserve the functionality of relfective programs. Therefore, we preclude such programs from consideration. We term the set of programs <code>$\tilde{\mathbb{P}} := \{P \in \mathbb{P} : \mathsf{nr}(P) \; \land \; P \equiv \mathsf{TPre}_{P_{\mathsf{mal}, u}}(P),\; \forall u \in \mathbb{Z}_{+}\} $</code> <em>instrumentation-friendly</em> programs; that is, programs that are both <em>non-spurious</em> and <em>non-reflective</em>, where <code>$\mathsf{nr} : \mathbb{P} \to \{0, 1\}$</code> is a predicate that determines whether a program is non-reflective,</p>
+<p>A program is said to be <em>reflective</em> if the program counter (PC) register is an operand of one or more of its instructions. It is difficult for instrumentors to preserve the functionality of relfective programs. Let <code>$\mathsf{nr} : \mathbb{P} \to \{0, 1\}$</code> be a predicate that determines whether a program is non-reflective. It is easy to see that such a predicate is efficiently computable.</p>
+<p>We term the set of programs <code>$\tilde{\mathbb{P}} := \{P \in \mathbb{P} : \mathsf{nr}(P) \; \land \; P \equiv \mathsf{TPre}_{P_{\mathsf{mal}, u}}(P),\; \forall u \in \mathbb{Z}_{+}\} $</code> <em>instrumentation-friendly</em> programs; that is, programs that are both <em>non-spurious</em> and <em>non-reflective</em>, and we preclude such programs from consideratoin.</p>
 <p>Note that the concatentaion operation <code>$\parallel$</code> is understood to intelligently produces a resultant program such that all branches/calls to targets in the second program (right operand) are translated by the size of the first program (left operand).</p>
+<h4>TIncRegs Transformation</h4>
+<p>In this section we construct a transformation that increments all register numbers used in a program by some specified <code>$k$</code> so that the resulting program does not disturb the lower <code>$k$</code> registers (<code>$\mathsf{r0}, \mathsf{r1}, \ldots$</code> etc.) which are reserved for special purposes such as the stack pointer. We now describe how this transformation works. Firstly, it requires that <code>$k \geq 4$</code> and the first <code>$k$</code> registers are setup as follows as a prerequisite for the correctness of the program: <code>$\mathsf{r3}$</code> is a pointer to a block of memory of at least <code>$k + 1$</code> words, <code>$\mathsf{r1}$</code> is the stack pointer and <code>$\mathsf{r2}$</code> contains the constant -1 (see PUSH/POP macros above). Code is inserted to multiplex the contents of <code>$\mathsf{r\rho - 1}$</code> (concretely r13 when <code>$\rho = 14$</code>) between <code>$k + 1$</code> different values which are stored in the block of memory pointed to by <code>$\mathsf{r3}$</code> and swapped in/out as required.</p>
+<p>Now we present the <code>$\mathsf{TIncRegs}_k$</code> transformation.</p>
 <p><code>$\mathbf{TIncRegs}_k(P)$</code>:</p>
 <ul>
 <li><code>$(\mathbf{c}, \mathbf{d}) \gets P$</code> </li>
@@ -432,6 +433,8 @@ pop s</code></pre></li>
 </ul></li>
 <li>Return <code>$P' := (\mathbf{c'}, \mathbf{d})$</code></li>
 </ul>
+<p>An invariant that TIncRegs must necessarily satisfy is as follows. Let <code>$k \geq 4$</code> be an integer. For all <code>$P \in \tilde{\mathbb{P}}$</code> it holds that
+<code>$$ (\mathsf{TPre}_{P_{\mathsf{setup}}} \circ \mathsf{TIncRegs}_k) (P) \equiv P.$$</code></p>
 <h4>Address Manager Definition</h4>
 <div class="definition" style="font-style: normal">
 <b>1. </b>An <em>address manager</em> is a tuple of polynomial-time algorithms <code>$(\mathsf{Init}, \mathsf{Malloc}, \mathsf{Free}, \mathsf{Access}, \mathsf{Finalize})$</code> defined as follows:<ul>
