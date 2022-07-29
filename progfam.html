@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Classification of Programs | HRAM0</title>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="style/prism.css" rel="stylesheet"/>
+<link href="style/theorems.css" rel="stylesheet"/>  
+</head>
+<style>
+blockquote {
+	font-style: italic;
+	color: #555;
+	padding-left: 32px;
+	border-left: 3px solid ;
+}
+
+body {
+  margin: 40px;
+  font-family: Arial, Helvetica, sans-serif;  
+}
+
+.menu {
+    /*min-width: 170px;*/
+    grid-area: menu;
+   font-size: 1.25vw;
+  }
+
+  .content {
+    grid-area: content;
+  }
+
+  .header {
+    grid-area: header;
+  }
+
+
+  .wrapper {
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 15%  85%;
+    grid-template-areas:
+               "....... header"
+               "menu content";
+    background-color: #ffffff;
+    color: #000000;
+  }
+.box {
+  background-color: #EEEEEE;
+  color: #000000;
+  border-radius: 5px;
+  border-style: dashed;  
+  padding: 1.25vw;
+}
+
+.header {
+  background-color: #02994D;
+  color: white;
+  border-color: black;
+}
+
+ul.vertical {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 7vw;
+    /*width: 170px;*/
+    background-color: #f1f1f1;
+}
+
+ul.vertical li a {
+    display: block;
+    color: #000;
+    padding: 0px 0 8px 0px;
+    text-decoration: none;
+    border-bottom: 2px solid #000000;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+tr.row td {
+    border-bottom: 2px solid #000000;
+}
+
+pre {
+    width: 76.5%;
+    border: 2px solid #000000;
+}
+
+ul.vertical li a:hover:not(.active) {
+    background-color: #555;
+    color:white;
+}
+
+ul.vertical a.active {
+    background-color: #02994D;
+    color:white;
+}
+
+
+
+</style>
+<script src="js/prism.js" defer></script>
+
+
+<div class='wrapper'>
+<div class='box header'><b>HRAM0</b> | Model and Toolchain for Research in Memory Safety</div>
+<div class='box menu'>
+<center><ul class='vertical'><li><a href="hram0.html">Home</a></li>
+<li><a href="spec.html">Specification</a></li>
+<li><a href="asm.html">Assembly</a></li>
+<li><a href="source.html">Source</a></li>
+<li><a href="memsafe.html">Memory Safety</a></li>
+<li><a href="contact.html">Contact</a></li>
+</ul>
+</div>
+</center>
+<div class='box content'><article style='margin-top: 32px;'><h1>Universal Screeners</h1><u>Last Updated:</u> <time datetime=2022-07-23T09:20:02>Saturday 23rd July 2022</time><style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+</style>
+<h4>Families of Programs</h4>
+<div class="definition" style="font-style: normal">
+<b>1. </b>An <em>input space</em> is a set <code>$\mathcal{X} \subseteq \mathbb{Z}^\ast$</code>.
+</div>
+<div class="definition" style="font-style: normal">
+<b>2. </b>An <em>output space</em> <code>$\mathcal{Y}$</code> is a tuple <code>$(p_\mathcal{Y}, Y, f_\mathcal{Y})$</code> where <code>$p_\mathcal{Y} : \mathcal{X} \times \mathcal{P}(\mathbb{Z} \times \mathbb{Z}) \to \{0, 1\}$</code> is a <em>characteristic predicate</em> such that the output space concretely corresponds to the subset <code>$\{M \in \mathcal{P}(\mathbb{Z} \times \mathbb{Z}) : \exists x \in \mathcal{X} \; p_\mathcal{Y}(x, M) = 1\} \subseteq \mathbb{Z} \times \mathbb{Z})$</code>. The set <code>$Y$</code> is a non-empty set of canonical representations containing a null element <code>$\mathfrak{0}$</code>, and <code>$f_\mathcal{Y} : \mathcal{P}(\mathbb{Z} \times \mathbb{Z}) \to Y$</code> is a filter function satisfying <code>$p_\mathcal{Y}(x, M) = 0 \iff f(M) = \mathfrak{0} \; \; \forall x \in \mathcal{X}, M \in \mathcal{P}(\mathbb{Z} \times \mathbb{Z})$</code>.
+</div>
+<div class="definition" style="font-style: normal">
+<b>3. </b>A family of programs <code>$\mathcal{F}$</code> is a subset of admissible programs <code>$\mathcal{F} \subseteq \mathbb{P}$</code> equipped with a pair <code>$(\mathcal{X}, \mathcal{Y})$</code>, an input space and output space respectively, such that for all programs <code>$P \in \mathcal{F}$</code>, it holds that for all inputs <code>$x \in \mathcal{X}$</code> in the input space, <code>$P$</code> is safely terminating i.e. <code>$\mathsf{exec}(P, x) \notin \{\infty, \bot\}$</code> and <code>$P$</code> produces the expected output for input <code>$x$</code> i.e. <code>$p_\mathcal{Y}(x, \mathsf{exec}(P, x)) = 1$</code>.</p>
+<p>Equivalence between two programs <code>$P_1, P_2 \in \mathcal{F}$</code>, denoted <code>$P_1 \equiv P_2$</code> is understood to mean <code>$P_1 \equiv_{f_\mathcal{Y}} P_2$</code> where the input space in the definition of <code>$\equiv_{f_\mathcal{Y}}$</code> is restricted to <code>$\mathcal{X}$</code>.
+</div>
+<div class="definition" style="font-style: normal">
+<b>4. </b>An indexed family of programs <code>$\mathcal{F} = \{\mathcal{F}^{(\kappa)} := (\mathcal{X}^{(\kappa)}, \mathcal{Y}^{(\kappa)})\}_{\kappa \in \mathbb{N}}$</code> is a collection of subfamilies such that the problem size in each subfamily is <code>$\kappa$</code> i.e. it holds that <code>$\mathcal{X}^{(\kappa)} \subseteq \mathbb{Z}^{n(\kappa)}$</code> where <code>$n(\kappa)$</code> is an integer function of <code>$\kappa$</code> and captures the fact that the actual input size may be larger than the problem size but nevertheless linked to it.
+</div>
+<h4>Safely-Terminating Programs</h4>
+<p>Consider the set <code>$\mathbb{T}$</code> of terminating programs; that is we define <code>$\mathbb{T} := \{P \in \mathbb{P} : \mathsf{exec}(P, \mathbf{x}) \neq \infty \; \forall \mathbf{x} \in \mathbb{Z}^\ast\}$</code>.  We can partition <code>$\mathbb{T}$</code> into two classes; the class of safe programs <code>$\mathbb{S} \subset \mathbb{T}$</code> defined as <code>$\mathbb{S} := \{P \in \mathbb{T} : \mathsf{exec}(P, \mathbf{x}) \neq \bot \; \forall \mathbf{x} \in \mathbb{Z}^\ast\}$</code>; and the class of unsafe programs <code>$\bar{\mathbb{S}} := \mathbb{T} \setminus \mathbb{S}$</code>. Note that it is sufficient for a program to be deemed <em>unsafe</em>, and hence a member of <code>$\bar{\mathbb{S}}$</code>, should it enter the error state for only a single input. An immediate consequence of a strengthening transformation <code>$T : \mathbb{P} \to \mathbb{P}$</code> is that <code>$T(P) \in \mathbb{S} \; \forall P \in \mathbb{T}$</code>.</p>
+<p>Naturally, only subsets of <code>$\mathbb{T}$</code> that are defined with respect to finite input spaces are recognizable (recursively enumerable). For example, for any positive integers <code>$\kappa$</code> and <code>$m$</code>, the subset <code>$\mathbb{T}_m^{(\kappa)} := \{P \in \mathbb{P} : \mathsf{exec}(P, \mathbf{x}) \neq \infty \; \forall \mathbf{x} \in \mathbb{Z}_m^n\} \subset \mathbb{T}$</code> is recognizable.
+Natural analogues of <code>$\mathbb{T}_m^{(\kappa)}$</code> can be defined for the class of safe programs (<code>$\mathbb{S}_m^{(\kappa)}$</code>) and the class of unsafe programs (<code>$\bar{\mathbb{S}}_m^{(\kappa)}$</code>).</p>
+<h4>Example Family of Programs: Sorting</h4>
+<p>To help the reader, it is instructive to use a running example that we can make reference to throughout these pages. Furthermore, such a running example affords the opportunity to make easy comparison between different approaches. The example we use is familiar: sorting. In particular, we describe the family of sorting programs; first, from a general perspective, and then with consideration of a special case i.e. a concrete program that implements a specific sorting algorithm.</p>
+<p>Consider <code>$\mathcal{F}_{\mathsf{sort}} := \{\mathcal{F}_{\mathsf{sort}}^{(\kappa)}\}_{\kappa \in \mathbb{N}}$</code> where <code>$\mathcal{F}_{\mathsf{sort}}^{(\kappa)} := (\mathcal{X}_{\mathsf{sort}}^{(\kappa)} := \mathbb{Z}^{n(\kappa)}, \mathcal{Y}_{\mathsf{sort}}^{(\kappa)} := (p_{\mathsf{sort}}, Y_{\mathsf{sort}}, f_{\mathsf{sort}}))$</code>. The input space for each input size <code>$\kappa$</code> is the set of integer arrays of length <code>$\kappa$</code>. Therefore, we have <code>$n(\kappa) = \kappa$</code>. The expected output is also an array of length <code>$\kappa$</code>. We can further restrict the output arrays to be sorted, but we will not do this at the moment since we wish to consider more than merely correct programs. We define <code>$Y_\mathsf{sort} := \mathbb{Z}^{n(\kappa)}$</code>, the set of integer arrays of length <code>$\kappa$</code>. The expected form of the output is to take the first <code>$\kappa$</code> integers of memory, starting from address 0, as the output array. Therefore, the predicate <code>$p_{\mathsf{sort}}(\mathbf{x}, M) := \bigwedge_{i = 0}^{\kappa - 1} M(i)$</code> checks that <em>all</em> <code>$\kappa$</code> memory locations between 0 and <code>$\kappa - 1$</code> (inclusive) are defined. Furthermore the filter function <code>$f_{\mathsf{sort}}$</code> is defined thus: <code>$$f_{\mathsf{sort}}(M) = \begin{cases} (M(0), \ldots, M(\kappa - 1)) &amp; \text{ if } \exists \mathbf{x} \in \mathcal{X}_{\mathsf{sort}}^{(\kappa)} \; p_{\mathsf{sort}}(\mathbf{x}, M) = 1 \\ \mathfrak{0} &amp; \text{ otherwise} \end{cases}$$</code>
+A subfamily of <code>$\mathcal{F}_{\mathsf{sort}}$</code> is <code>$\mathcal{F}_{\mathsf{sort}}^{\mathsf{legal}}$</code> which is defined as the collection of programs that output a permutation of the input array.  It suffices to define <code>${p}_{\mathsf{sort}}^{\mathsf{legal}}(\mathbf{x}, M) := p_{\mathsf{sort}}(\mathbf{x}, M) \; \land \; \mathsf{perm}(\mathbf{x}, [M(0), \ldots, M(\kappa - 1)])$</code> where <code>$\mathsf{perm}$</code> is a predicate that asserts whether the sequence of length <code>$\kappa$</code> in the second argument is a permutation of the sequence of length <code>$\kappa$</code> in the first argument. Note that we are implicitly fixing some <code>$\kappa$</code> in our treatment here to simplify notation. We can of course subdivide further and consider the subfamily of <code>$\mathcal{F}_{\mathsf{sort}}^{\mathsf{correct}} \subset \mathcal{F}_{\mathsf{sort}}^{\mathsf{legal}}$</code> corresponding to the collection of <em>correct</em> programs i.e. those that output sorted arrays. In this case, we define <code>${p}_{\mathsf{sort}}^{\mathsf{correct}}(\mathbf{x}, M) := {p}_{\mathsf{sort}}^{\mathsf{legal}}(\mathbf{x}, M) \; \land \; M(0) \leq M(1) \leq \cdots \leq M(\kappa - 1)$</code>.</p>
+<p>Now we present a member of this program family, namely selection sort. An implementation of this sorting algorithm is as follows. Note that this code is in the form of assembly used by our assembler.</p>
+<pre><code class="language-asm">BEGIN CODE
+
+###############################################################################
+# This program does some setup (initializes r2 := -1 for example) and calls
+# the selsort function (below) to sort the input array, then halts.
+###############################################################################
+main:
+    put -1, r2 # setup r2 (this is one of our common conventions)
+    put &amp;x, r4 # copy address of input to r4 in order to sort input
+    call selsort
+    hlt
+
+###############################################################################
+# Selection Sort (function dirties r5-r13 (i.e.not saved/restored from stack))
+#        
+# arguments: r4 - address of array of integers to sort of length n (reg n)
+# sorts array pointed to by r4 in-place
+###############################################################################
+selsort:
+        put 0, r5 # r5 is outer index
+        add r2, n, r12 # r12 = n - 1
+        sub r12, r5, r9
+        brn r9, outerloop
+        brn r2, end_outerloop
+
+outerloop:
+        add r5, r4, r6
+        lod r6, r7 # r7 is min value
+        put 0, r8
+        add r8, r7, r13
+        add r8, r5, r8
+        sub r2, r5, r9 # r9 = r5 + 1 = inner index
+
+        sub n, r9, r10
+        brn r10, innerloop
+        brn r2, end_innerloop
+
+innerloop:
+        add r9, r4, r10
+        lod r10, r10
+        sub r7, r10, r11
+        brn r11, newmin
+        brn r2, nextiter
+newmin:
+        put 0, r11
+        add r11, r9, r8
+        add r11, r10, r7
+nextiter:
+        sub r2, r9, r9
+        sub n, r9, r10
+        brn r10, innerloop
+
+end_innerloop:
+        add r8, r4, r10
+        sto r13, r10
+        sto r7, r6
+
+        sub r2, r5, r5
+        sub r12, r5, r9
+        brn r9, outerloop
+
+end_outerloop:
+        ret
+END CODE</code></pre>
+<h4>Example Family of Programs: Square Matrix Multiplication</h4>
+<p>Consider <code>$\mathcal{F}_{\mathsf{matmul}} := \{\mathcal{F}_{\mathsf{matmul}}^{(\kappa)}\}_{\kappa \in \mathbb{N}}$</code> where <code>$\mathcal{F}_{\mathsf{matmul}}^{(\kappa)} := (\mathcal{X}_{\mathsf{matmul}}^{(\kappa)} := \mathbb{Z}^{n(\kappa)}, \mathcal{Y}_{\mathsf{matmul}}^{(\kappa)} := (p_{\mathsf{matmul}}, Y_{\mathsf{matmul}}, f_{\mathsf{matmul}}))$</code>. The input space for each input size <code>$\kappa$</code> is a pair of integer matrices whose rows and columns are of dimension <code>$\kappa$</code>. Therefore, we have <code>$n(\kappa) = 2.\kappa^2$</code>. This particular example illustrates that the size of the input <code>$n = n(\kappa)$</code> may be larger than the &quot;problem size&quot; <code>$\kappa$</code> albeit the former grows in accordance with the latter; in this case, in direct proportion with its square.</p>
+<p>The choice of mapping from <code>$\mathbb{Z}^{\kappa \times \kappa} \times \mathbb{Z}^{\kappa \times \kappa}$</code> to <code>$\mathbb{Z}^{2\kappa^2}$</code> is arbitrary. Here we choose row-major order. An element of the input space is a multiplicand matrix in row-major order followed by the multiplier matrix in row-major order. An element of the set of cannonical representations <code>$Y_\mathsf{matmul}$</code> is a <code>$\kappa \times \kappa$</code> integer matrix. The predicate <code>$p_{\mathsf{matmul}}$</code> is defined as <code>$p_{\mathsf{matmul}}(\mathbf{x}, M) := \bigwedge_{i = 0}^{\kappa^2 - 1} M(i)$</code> checks that <em>all</em> <code>$\kappa^2$</code> memory locations between 0 and <code>$\kappa^2 - 1$</code> (inclusive) are defined. Furthermore the filter function <code>$f_{\mathsf{matmul}}$</code> is defined thus: <code>$$f_{\mathsf{matmul}}(M) = \begin{cases} \begin{bmatrix} M(0) &amp; M(1) &amp; \cdots &amp; M(\kappa - 1)) \\ \vdots &amp; \vdots &amp; \vdots &amp; \vdots \\ M((\kappa - 1)\kappa) &amp; M((\kappa - 1)\kappa + 1) &amp; \cdots &amp; M((\kappa - 1)\kappa + \kappa - 1) \end{bmatrix} &amp;  \text{ if } \exists \mathbf{x} \in \mathcal{X}_{\mathsf{matmul}}^{(\kappa)} \; p_{\mathsf{matmul}}(\mathbf{x}, M) = 1 \\ \mathfrak{0} &amp; \text{ otherwise} \end{cases}$$</code></p>
+<p>A subfamily of <code>$\mathcal{F}_{\mathsf{matmul}}$</code> is <code>$\mathcal{F}_{\mathsf{matmul}}^{\mathsf{legal}}$</code> which is defined as the collection of programs that output a square matrix iff the input is a pair of square matrices.  It suffices to define <code>${p}_{\mathsf{matmul}}^{\mathsf{legal}}(\mathbf{x}, M) := p_{\mathsf{matmul}}(\mathbf{x}, M) \; \land \; \exists \kappa \in \mathbb{N} \; \exists \mathbf{A}, \mathbf{B} \in \mathbb{Z}^{\kappa \times \kappa} \; \mathbf{x} = (\mathbf{A}, \mathbf{B})$</code></p>
+<p>We can of course subdivide further and consider the subfamily of <code>$\mathcal{F}_{\mathsf{matmul}}^{\mathsf{correct}} \subset \mathcal{F}_{\mathsf{matmul}}^{\mathsf{legal}}$</code> corresponding to the collection of <em>correct</em> programs i.e. those programs that output a matrix that is the product of the pair of input matrices. In this case, we define <code>${p}_{\mathsf{matmul}}^{\mathsf{correct}}(\mathbf{x}, M) := {p}_{\mathsf{matmul}}^{\mathsf{legal}}(\mathbf{x}, M) \; \land \; {f}_{\mathsf{matmul}}(M) = \mathbf{A}\mathbf{B}$</code> where <code>$\mathbf{x} = (\mathbf{A}, \mathbf{B})$</code>.</p></article></div>
+      </div><footer style='margin-top:32px;'>
+</footer><!DOCTYPE html>
+<script src="js/math_code.js"></script>
+<script async
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+</html>
