@@ -125,7 +125,7 @@ table, th, td {
 <h3>Construction of Universal Screener</h3>
 <p>A prerequisite for reading this page is the preceeding article in this series - <a href="char.html">characterization of memory safety</a>.
 Recall that a <em>screener</em> is a transformation that is both an instrumentor and one that is strenghtening. Furthermore, a screener is <em>universal</em> if it checks <em>every</em> memory access for safety. The asymptotic complexity in terms of number of memory accesses of a transformed program <code>$P' = T(P)$</code> is linearly dependent on <code>$m_P(n)$</code> where <code>$T$</code> is a universal screener and <code>$P \in \mathbb{P}$</code> is a valid program where <code>$m_P(n)$</code> is the (average) number of memory accesses made by program P on inputs of length n. The complexity also depends on another important factor: the data structure used to keep track of valid allocated blocks. Such &quot;bookkeeping&quot; is indispensible and plays an important role in any realization of a screener.</p>
-<p>Constructing a universal screener for HHRAM0 programs involve some technicalities, which we discuss in turn. Firstly, we introduce some useful macros to serve our needs.</p>
+<p>Constructing a universal screener for HHRAM0 programs involves some technicalities, which we discuss in turn. Firstly, we introduce some useful macros to serve our needs.</p>
 <h4>Preliminaries</h4>
 <p>We now define two important macros which we make ample use of later. They relate to manipulation of a stack, namely the push and pop operations. Both macros assume the stack pointer is stored in register <code>$\mathsf{r1}$</code> and that the register <code>$\mathsf{r2}$</code> contains the constant -1.</p>
 <ul>
@@ -168,12 +168,13 @@ Recall that a <em>screener</em> is a transformation that is both an instrumentor
 <p>In the discussion to follow, our definitions rely heavily on the notion of program equivalence. However, the astute reader may observe that the equivalences do not hold when employing our default filter function, defined in the <a href="char.html">previous article</a>. Therefore, we must specify a filter function that is of import here and which is to be implicitly understood as being applicable in all uses of program equivalence for the remainder of this article. This function <code>$f^\ast : \mathcal{P}(\mathbb{Z} \times \mathbb{Z}) \to  \mathcal{P}(\mathbb{Z} \times \mathbb{Z})$</code> is defined thus
 <code>$$f^\ast(M) = \{(i, M(i)) : i \geq 0, \bigwedge_{j = 0}^{i} M(j)\}$$</code>
 and truncates a memory relation to the lower contiguous range of addreses, consisting of the static data together with the program input. As such, the heap; that is, the dynamically-allocated blocks are ignored (note that owing to the fact that <code>$\zeta &gt; 0$</code> it means a &quot;gap&quot; separates the defined lower memory from the dynamically-allocated blocks).  Henceforth, for the remainder of this article, the default filter function is understood to be <code>$f^\ast$</code>.</p>
-<p>A spurious program is one that accesses memory at one or more absolute addresses; that is, an address that is not relative to any of the blocks the program has allocated, excepting of course the region of statically-allocated data and program input. Our instrumentation approach fails with spurious program because we cannot ncessarily preserve their functionality when modifying the program to keep track of safe/unsafe memory regions, since allocating space for a runtime management system affects the program's behavior. A program <code>$P$</code> is non-spurious iff <code>$\mathsf{TPre}_{P_{\mathsf{mal}, u}}(P) \equiv P$</code> for <em>any</em> choice of <code>$u$</code> where <code>$P_{\mathsf{mal}, u}$</code> is defined thus</p>
+<p>A spurious program is one that accesses memory at one or more absolute addresses; that is, an address that is not relative to any of the blocks the program has allocated, excepting of course the region of statically-allocated data and program input. Our instrumentation approach fails with spurious programs because we cannot necessarily preserve their functionality when modifying the program to keep track of safe/unsafe memory regions, since allocating space for a runtime management system affects the program's behavior. A program <code>$P$</code> is non-spurious iff <code>$\mathsf{TPre}_{P_{\mathsf{mal}, u}}(P) \equiv P$</code> for <em>any</em> choice of <code>$u$</code> where <code>$P_{\mathsf{mal}, u}$</code> is defined thus</p>
 <p><strong>Program </strong><code>$P_{\mathsf{mal}, u}$</code>:</p>
 <pre><code class="language-asm">start:
-    put u, r0 // alloacate region of size u
+    put u, r0 
+    mal u, r0 // alloacate region of size u
     put 0, r0 // restore r0 to 0 (so appended program gets usual environment)</code></pre>
-<p>A program is said to be <em>reflective</em> if the program counter (PC) register is an operand of one or more of its instructions. It is difficult for instrumentors to preserve the functionality of relfective programs. Let <code>$\mathsf{nr} : \mathbb{P} \to \{0, 1\}$</code> be a predicate that determines whether a program is non-reflective. It is easy to see that such a predicate is efficiently computable.</p>
+<p>A program is said to be <em>reflective</em> if the program counter (PC) register is an operand of one or more of its instructions. It is difficult for instrumentors to preserve the functionality of reflective programs. Let <code>$\mathsf{nr} : \mathbb{P} \to \{0, 1\}$</code> be a predicate that determines whether a program is non-reflective. It is easy to see that such a predicate is efficiently computable.</p>
 <p>We term the set of programs <code>$\tilde{\mathbb{P}} := \{P \in \mathbb{P} : \mathsf{nr}(P) \; \land \; P \equiv \mathsf{TPre}_{P_{\mathsf{mal}, u}}(P),\; \forall u \in \mathbb{Z}_{+}\} $</code> <em>instrumentation-friendly</em> programs; that is, programs that are both <em>non-spurious</em> and <em>non-reflective</em>, and we preclude such programs from consideratoin.</p>
 <p>Note that the concatentaion operation <code>$\parallel$</code> is understood to intelligently produces a resultant program such that all branches/calls to targets in the second program (right operand) are translated by the size of the first program (left operand).</p>
 <h4>TIncRegs Transformation</h4>
@@ -181,11 +182,12 @@ and truncates a memory relation to the lower contiguous range of addreses, consi
 <p>Now we present the <code>$\mathsf{TIncRegs}_k$</code> transformation.</p>
 <p><code>$\mathbf{TIncRegs}_k(P)$</code>:</p>
 <ul>
-<li><code>$(\mathbf{c}, \mathbf{d}) \gets P$</code> </li>
+<li><code>$(\mathbf{c}, \mathbf{d}) \gets P$</code></li>
+<li><code>$\mathbf{c'} \gets \epsilon$</code> </li>
 <li><code>$\mathsf{sel} \gets 0$</code> </li>
 <li>For each instruction <code>$\mathsf{instr} \in P$</code>: 
 <ul>
-<li><code>$\mathbf{c'} \gets \epsilon$</code> </li>
+<li><code>$\hat{\mathbf{c}} \gets \epsilon$</code> </li>
 <li><code>$\mathsf{last} \gets 0$</code> </li>
 <li><code>$\mathsf{start\_index} \gets 0$</code> </li>
 <li>If <code>$\mathsf{instr.opcode} = \mathsf{PUT}$</code> or <code>$\mathsf{instr.opcode} = \mathsf{CAL}$</code>: </li>
@@ -363,13 +365,14 @@ pop s</code></pre></li>
 <ul>
 <li>Append the following code to <code>$\mathbf{c'}$</code>
 <pre><code class="language-asm">push s
-put sel, s
-add s, r0, s
-sto r, s
-put t, s
-add s, r0, s
+put sel, s // current selection
+add s, r3, s
 sub r2, s, s // skip stack address (s += 1)
-lod s, r
+sto r, s // save current value of r (r is register \rho - 1)
+put t, s // new selection
+add s, r3, s
+sub r2, s, s // skip stack address (s += 1)
+lod s, r // load newly selected value into r (r is register \rho - 1)
 pop s</code></pre></li>
 </ul>
 </li>
@@ -536,7 +539,11 @@ pop s</code></pre></li>
 </li>
 <li>
 <ul>
-<li>*push <code>$\mathsf{instr.operands}[1]$</code> </li>
+<li>
+<ul>
+<li>push <code>$\mathsf{instr.operands}[1]$</code> </li>
+</ul>
+</li>
 </ul>
 </li>
 <li>
