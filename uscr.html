@@ -107,16 +107,16 @@ ul.vertical a.active {
 <div class='wrapper'>
 <div class='box header'><b>HRAM0</b> | Model and Toolchain for Research in Memory Safety</div>
 <div class='box menu'>
-<center><ul class='vertical'><li><a href="hram0.html">Home</a></li>
-<li><a href="spec.html">Specification</a></li>
-<li><a href="asm.html">Assembly</a></li>
-<li><a href="source.html">Source</a></li>
-<li><a href="memsafe.html">Memory Safety</a></li>
-<li><a href="contact.html">Contact</a></li>
+<center><ul class='vertical'><li><a href="/~mclear/hrtst/?page=hram0">Home</a></li>
+<li><a href="/~mclear/hrtst/?page=spec">Specification</a></li>
+<li><a href="/~mclear/hrtst/?page=asm">Assembly</a></li>
+<li><a href="/~mclear/hrtst/?page=source">Source</a></li>
+<li><a href="/~mclear/hrtst/?page=memsafe">Memory Safety</a></li>
+<li><a href="/~mclear/hrtst/?page=contact">Contact</a></li>
 </ul>
 </div>
 </center>
-<div class='box content'><article style='margin-top: 32px;'><h1>Universal Screeners</h1><u>Last Updated:</u> <time datetime=2022-07-23T09:20:02>Saturday 23rd July 2022</time><style>
+<div class='box content'><article style='margin-top: 32px;'><h1>Universal Screeners</h1><u>Last Updated:</u> <time datetime=2022-08-09T07:06:12>Tuesday 9th August 2022</time><style>
 table, th, td {
   border: 1px solid black;
   border-collapse: collapse;
@@ -442,7 +442,7 @@ pop s</code></pre></li>
 <div class="definition" style="font-style: normal">
 <b>1. </b>An <em>address manager</em> is a tuple of polynomial-time algorithms <code>$(\mathsf{Init}, \mathsf{Malloc}, \mathsf{Free}, \mathsf{Access}, \mathsf{Finalize})$</code> defined as follows:<ul>
 <li><code>$\mathsf{Init}:$</code> Takes as input a program in <code>$\tilde{\mathbb{P}}$</code> (the program to instrument) and a register number between 0 and <code>$\rho$</code> (containing stack pointer) and a register number between 0 and <code>$\rho$</code> (to store pointer to address manager program state) and outputs a tuple containing the address manager context and the instrumented code sequence for initialization.</li>
-<li><code>$\mathsf{Malloc}:$</code> Takes as input address manager context and outputs the instrumented code sequence for a subroutine that is called for memory allocations. This subroutine takes two parameters, the number of words to allocate and the address of the newly allocated block.</li>
+<li><code>$\mathsf{Malloc}:$</code> Takes as input address manager context and outputs the instrumented code sequence for a subroutine that is called for memory allocations. This subroutine takes two parameters, the address of the newly allocated block and the number of words allocated.</li>
 <li><code>$\mathsf{Free}:$</code> Takes as input address manager context and outputs the instrumented code sequence for a subroutine that is called when memory is freed. This subroutine takes one parameter, the starting address of the block to free.</li>
 <li><code>$\mathsf{Check}:$</code> Takes as input address manager context and outputs the instrumented code sequence for a subroutine that is called for memory address checks. This subroutine takes two parameters that mark the address range to check, namely the starting address (inclusive) and the ending address. The subroutine returns 0 iff the address range is safe and returns -1 iff the address range is unsafe.</li>
 <li><code>$\mathsf{Finalize}:$</code> Takes as input address manager context and outputs the instrumented code sequence for a subroutine that is called when the program aborts. This subroutine takes no parameters.</li>
@@ -623,15 +623,6 @@ pop s</code></pre></li>
 <ul>
 <li>
 <ul>
-<li>push <code>$\mathsf{instr.operands}[j]$</code> // start address </li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-<ul>
-<li>
-<ul>
 <li>sub <code>$\mathsf{r2}, \mathsf{instr.operands}[j], r0$</code> </li>
 </ul>
 </li>
@@ -641,7 +632,16 @@ pop s</code></pre></li>
 <ul>
 <li>
 <ul>
-<li>push r0 // end address is start address + 1 (exclusive) </li>
+<li>push r0 // end address is start address + 1 (exclusive)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>push <code>$\mathsf{instr.operands}[j]$</code> // start address  </li>
 </ul>
 </li>
 </ul>
