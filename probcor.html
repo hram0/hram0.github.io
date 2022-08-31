@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Probabilistic Correctness and Pointer Tagging | HRAM0</title>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="style/prism.css" rel="stylesheet"/>
+<link href="style/theorems.css" rel="stylesheet"/>  
+</head>
+<style>
+blockquote {
+	font-style: italic;
+	color: #555;
+	padding-left: 32px;
+	border-left: 3px solid ;
+}
+
+body {
+  margin: 40px;
+  font-family: Arial, Helvetica, sans-serif;  
+}
+
+.menu {
+    /*min-width: 170px;*/
+    grid-area: menu;
+   font-size: 1.25vw;
+  }
+
+  .content {
+    grid-area: content;
+  }
+
+  .header {
+    grid-area: header;
+  }
+
+
+  .wrapper {
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 15%  85%;
+    grid-template-areas:
+               "....... header"
+               "menu content";
+    background-color: #ffffff;
+    color: #000000;
+  }
+.box {
+  background-color: #EEEEEE;
+  color: #000000;
+  border-radius: 5px;
+  border-style: dashed;  
+  padding: 1.25vw;
+}
+
+
+.header {
+  background-color: #02994D;
+  color: white;
+  border-color: black;
+}
+
+ul.vertical {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 7vw;
+    /*width: 170px;*/
+    background-color: #f1f1f1;
+}
+
+ul.vertical li a {
+    display: block;
+    color: #000;
+    padding: 0px 0 8px 0px;
+    text-decoration: none;
+    border-bottom: 2px solid #000000;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+tr.row td {
+    border-bottom: 2px solid #000000;
+}
+
+pre {
+    width: 76.5%;
+    border: 2px solid #000000;
+}
+
+ul.vertical li a:hover:not(.active) {
+    background-color: #555;
+    color:white;
+}
+
+ul.vertical a.active {
+    background-color: #02994D;
+    color:white;
+}
+
+
+
+</style>
+<script src="js/prism.js" defer></script>
+
+
+<div class='wrapper'>
+<div class='box header'><b>HRAM0</b> | Model and Toolchain for Research in Memory Safety</div>
+<div class='box menu'>
+<center><ul class='vertical'><li><a href="hram0.html">Home</a></li>
+<li><a href="spec.html">Specification</a></li>
+<li><a href="asm.html">Assembly</a></li>
+<li><a href="source.html">Source</a></li>
+<li><a href="memsafe.html">Memory Safety</a></li>
+<li><a href="contact.html">Contact</a></li>
+</ul>
+</div>
+</center>
+<div class='box content'><article style='margin-top: 32px;'><h1>Probabilistic Correctness and Pointer Tagging</h1><u>Last Updated:</u> <time datetime=2022-08-31T13:18:42>Wednesday 31st August 2022</time><style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+</style>
+<p>Here we attempt to give an account of memory safety with probabilistic correctness. In fact by relaxing the correctness conditions of a screener to guarantee memory safety with all but some small error probability, the doors are opened to a plethora of opportunities to boost performance and shrink the memory overhead. We then examine a case-in-point in the form of a screener based on pointer tagging. While pointer tagging generally requires hardware support for a certain addressing feature - a feature not natively supported by HRAM0 - we describe a suitable adaptation.</p>
+<h2>Families of Programs with Probabilistic Correctness</h2>
+<p>Many of the definitions pertaining to program families in our <a href="progfam.html">article on classification of programs</a> can also be generalized to appropriately permit probabilistic correctness.</p>
+<div class="definition" style="font-style: normal">
+<b>1. </b>A family of programs <code>$\mathcal{F}$</code> with probabilistic correctness <code>$q \in [0, 1]$</code> is a subset of admissible programs <code>$\mathcal{F} \subseteq \mathbb{P}$</code> equipped with a pair <code>$(\mathcal{X}, \mathcal{Y})$</code>, an input distribution <code>$\mathcal{X}$</code> and output space respectively, such that for all programs <code>$P \in \mathcal{F}$</code>, it holds that for an input <code>$x \stackrel{\$}{\gets} \mathcal{X}$</code> sampled from the input distribution, <code>$P$</code> produces the expected output for input <code>$x$</code> with probability <code>$q$</code> i.e. <code>$\mathsf{Pr}\big[p_\mathcal{Y}(x, \mathsf{exec}(P, x)) \to 1\big] \geq q$</code>.
+</div>
+<h2><code>$p$</code>-Strenghtening Transformations</h2>
+<div class="definition" style="font-style: normal">
+<b>2. </b>Let <code>$\mathcal{X}$</code> be an input distribution on <code>$\mathbb{Z}^\ast$</code>, and let <code>$p \gg 1/2 \in [0, 1]$</code>. A transformation <code>$T$</code> is said to be <em>p-strengthening</em> if for all <code>$P \in \mathbb{P}$</code> the following two properties are satisfied.<ul>
+<li><code>$\mathbf{S.1}$</code>: <code>$\mathsf{Pr} \big[\mathsf{exec}(T(P), \mathbf{x}) \neq \bot \;\;|\;\; \mathsf{exec}(P, \mathbf{x}) = \bot \big] = p\;\; \forall \mathbf{x} \in \mathcal{X}$</code>.</li>
+<li><code>$\mathbf{S.2}$</code>: <code>$T(P) \preceq P$</code> (non-weakening)</li>
+</ul>
+</div>
+<div class="definition" style="font-style: normal">
+<b>3. </b>A <em><code>$p$</code>-screener</em> is a transformation <code>$T : \mathbb{P} \to \mathbb{P}$</code> that is<ul>
+<li>an instrumentor</li>
+<li><code>$p$</code>-strengthening</li>
+</ul>
+</div>
+<p>We now explore a topic that readily gives an instantiation of a <code>$p$</code>-screener.</p>
+<h2>Pointer Tagging</h2>
+<p>We borrow some notation and terminology from <a href="https://arxiv.org/pdf/1802.09517.pdf">this arXiv preprint</a>. Moreover, the following description is based on Section 3 (&quot;Memory Tagging&quot;) in the aforementioned <a href="https://arxiv.org/pdf/1802.09517.pdf">preprint</a> (p. 3).</p>
+<ul>
+<li>Every block of memory of length <code>$\mathsf{TG}$</code> (tagging granularity) bytes aligned on a <code>$\mathsf{TG}$</code>-byte boundary is associated with a tag of <code>$\mathsf{TS}$</code> (tag size) bits. Such a block is called a <strong>granule</strong>.</li>
+<li>The upper <code>$\mathsf{TS}$</code> bits of every pointer contains a <em>tag</em>.</li>
+<li>The tags are stored in <em>shadow memory</em>.  A program is instrumented to prefix every load and store with a probabilistic safety check that compares the tag in shadow memory with the tag contained in the pointer.</li>
+<li>A tag is chosen during memory allocation, thereby associating the memory chunk being allocated with this tag, setting the upper <code>$\mathsf{TS}$</code> bits to this tag and returning the resulting pointer.</li>
+<li>Every load and store triggers an exception on mismatch between the pointer tag and tag stored in shadow memory.</li>
+<li>Temporal and spatial errors are detected with a probability of approximiately <code>$(2^{\mathsf{TS}} - 1)/2^{\mathsf{TS}}$</code>.</li>
+</ul>
+<p>The above pertains to a real-world implementation in the Hardware ASAN (Address Sanitizer) tool for the AArch64 (ARM-64) architecture which leverages a hardware feature in AArch64 called Top-Byte Ignore (TBI) that when enabled ignores the top byte in an address when accessing memory thereby allowing this byte to be used to store a tag.</p>
+<p>Applying the above to HRAM0 is not immediately straightforward since HRAM0 is a an abstract model that is independent of units of storage and representation of integers. One of the concessions we are forced to make is to impose an upper bound on the memory usage of supported programs; that is, those programs that are deemed instrumentable.  Recall the set <code>$\tilde{\mathbb{P}}$</code>, the set of instrumentation-friendly programs, from the <a href="uscr.html">previous article</a>. We must further restrict this set as follows. A supported program accesses a <em>virtual</em> heap of bounded size <code>$\mathsf{VS}$</code> (virtual size). Define the set <code>$$\stackrel{\circ}{\mathbb{P}} := \{P \in \tilde{\mathbb{P}} : s_P(n) \leq \mathsf{VS} \; \forall n \in \mathbb{N}\}$$</code> where <code>$s_P(n)$</code> is the worst-case space complexity of program <code>$P$</code> with input size <code>$n$</code>. The simplification presented here does not allow <code>$\mathsf{VS}$</code> to grow as a function of input size <code>$n$</code> but this can be viewed as a natural extension.</p>
+<p>This overall approach to pointer tagging can be encapsulated as a probabilistic implementation of the Address Manager construct from the previous article.  We now give a specific high-level description of this Address Manager implementation. Note that the following is an approximate account that ignores some specific details of HRAM0 memory management.
+Recall that an an instance of Address Manager is a tuple of algorithms <code>$(\mathsf{Init}, \mathsf{Malloc}, \mathsf{Free}, \mathsf{Access}, \mathsf{Finalize})$</code>.</p>
+<ul>
+<li><code>$\mathsf{Init}$</code>: Returns instrumented initialization code that runs
+<ul>
+<li>malloc <code>$\mathsf{VS} / \mathsf{TG}$</code> words of shadow memory -&gt; <code>$\mathsf{SB}$</code> (shadow (memory) base)</li>
+<li>set <code>$\mathsf{VB} \gets \mathsf{SB} + (\mathsf{VS} / \mathsf{TG})$</code> (virtual (memory) base)</li>
+</ul></li>
+<li><code>$\mathsf{Malloc}$</code>: Returns instrumented code for malloc subroutine (with arguments <code>$p$</code> (pointer) and <code>$s$</code> (size)) that performs the following steps:
+<ul>
+<li>generate random integer tag in the range <code>$0$</code> - <code>$(2^{\mathsf{TS}} - 1)$</code></li>
+<li>compute <code>$z \gets (p - \mathsf{VB}) / \mathsf{TG}$</code></li>
+<li>for every <code>$0 &lt; j &lt; s / \mathsf{TG}$</code></li>
+<li>
+<ul>
+<li>store tag at <code>$\mathsf{SB} + z + j$</code></li>
+</ul>
+</li>
+<li>return combine(tag, p)</li>
+</ul></li>
+<li><code>$\mathsf{Free}$</code>: Returns instrumented code for free subroutine (with argument <code>$p$</code> (pointer)) that performs the following steps:
+<ul>
+<li>extract tag from <code>$p$</code> and remove tag from <code>$p$</code></li>
+<li>compute <code>$z \gets (p - \mathsf{VB}) / \mathsf{TG}$</code></li>
+<li>while <code>$(\mathsf{SB} + z)$</code> = tag</li>
+<li>
+<ul>
+<li>store 0 at <code>$\mathsf{SB} + z$</code></li>
+</ul>
+</li>
+<li>
+<ul>
+<li><code>$z \gets z + 1$</code></li>
+</ul>
+</li>
+</ul></li>
+<li><code>$\mathsf{Access}$</code>: Returns instrumented code for check subroutine (with argument <code>$p$</code> (pointer)) that performs the following steps:
+<ul>
+<li>extract tag from <code>$p$</code> and remove tag from <code>$p$</code></li>
+<li>compute <code>$z \gets (p - \mathsf{VB}) / \mathsf{TG}$</code></li>
+<li>If <code>$(\mathsf{SB} + z)$</code> = tag</li>
+<li>
+<ul>
+<li>Return 0</li>
+</ul>
+</li>
+<li>Else</li>
+<li>
+<ul>
+<li>Return -1</li>
+</ul>
+</li>
+</ul></li>
+<li><code>$\mathsf{Finalize}$</code>: Returns instrumented code for finalize subroutine that:
+<ul>
+<li>frees shadow memory</li>
+</ul></li>
+</ul>
+<p>Since our measures of space complexity as described in the previous article count the number of &quot;words&quot; allocated and since the size of each &quot;word&quot; in HRAM0 is unbounded, it follows that <code>$\mathsf{TS}$</code> may be set arbitrarily large without increasing memory cost. The time complexity of safety checks does however grow at least linearly with <code>$\mathsf{TS}$</code> (because HRAM0 does not have bitwise operations nor multiplication/division). Asymtotically, the above address manager has the same safety check time and space overhead as the non-probabilistic shadow memory / hash table based approach listed in the table in the <a href="uscr.html">previous article</a>. In practice, the space overhead of the above probabilistic address manager is a factor of <code>$\mathsf{TG}$</code> smaller than the space overhead of the former.</p></article></div>
+      </div><footer style='margin-top:32px;'>
+</footer><!DOCTYPE html>
+<script src="js/math_code.js"></script>
+<script async
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+</html>
