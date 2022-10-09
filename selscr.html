@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Selective Screeners: Complexity and Optimizations | HRAM0</title>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="style/prism.css" rel="stylesheet"/>
+<link href="style/theorems.css" rel="stylesheet"/>  
+</head>
+<style>
+blockquote {
+	font-style: italic;
+	color: #555;
+	padding-left: 32px;
+	border-left: 3px solid ;
+}
+
+body {
+  margin: 40px;
+  font-family: Arial, Helvetica, sans-serif;  
+}
+
+.menu {
+    /*min-width: 170px;*/
+    grid-area: menu;
+   font-size: 1.25vw;
+  }
+
+  .content {
+    grid-area: content;
+  }
+
+  .header {
+    grid-area: header;
+  }
+
+
+  .wrapper {
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 15%  85%;
+    grid-template-areas:
+               "....... header"
+               "menu content";
+    background-color: #ffffff;
+    color: #000000;
+  }
+.box {
+  background-color: #EEEEEE;
+  color: #000000;
+  border-radius: 5px;
+  border-style: dashed;  
+  padding: 1.25vw;
+}
+
+
+.header {
+  background-color: #02994D;
+  color: white;
+  border-color: black;
+}
+
+ul.vertical {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 7vw;
+    /*width: 170px;*/
+    background-color: #f1f1f1;
+}
+
+ul.vertical li a {
+    display: block;
+    color: #000;
+    padding: 0px 0 8px 0px;
+    text-decoration: none;
+    border-bottom: 2px solid #000000;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+tr.row td {
+    border-bottom: 2px solid #000000;
+}
+
+pre {
+    width: 76.5%;
+    border: 2px solid #000000;
+}
+
+ul.vertical li a:hover:not(.active) {
+    background-color: #555;
+    color:white;
+}
+
+ul.vertical a.active {
+    background-color: #02994D;
+    color:white;
+}
+
+
+
+</style>
+<script src="js/prism.js" defer></script>
+
+
+<div class='wrapper'>
+<div class='box header'><b>HRAM0</b> | Model and Toolchain for Research in Memory Safety</div>
+<div class='box menu'>
+<center><ul class='vertical'><li><a href="hram0.html">Home</a></li>
+<li><a href="spec.html">Specification</a></li>
+<li><a href="asm.html">Assembly</a></li>
+<li><a href="source.html">Source</a></li>
+<li><a href="memsafe.html">Memory Safety</a></li>
+<li><a href="contact.html">Contact</a></li>
+</ul>
+</div>
+</center>
+<div class='box content'><article style='margin-top: 32px;'><h1>Selective Screeners: Complexity and Optimizations</h1><u>Last Updated:</u> <time datetime=2022-10-09T08:38:47>Sunday 9th October 2022</time><style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+</style>
+<h1>Selective Screeners</h1>
+<p>Recall that a <em>screener</em> is a transformation that is both an instrumentor and one that is strenghtening. The screeners we have seen so far are <em>universal</em> insofar as they check <em>every</em> memory access for safety. On the other hand, a screener that elects to eliminate one or more checks which are determined to be redundant and can safely be removed is termed a <em>selective</em> screener.</p>
+<div class="definition" style="font-style: normal">
+<b>1. </b>The <em>check count</em> function <code>$\mathsf{ch}_{T, P} : \mathbb{N} \to \mathbb{N}$</code> measures the number of checks made by the output of screener <code>$T : \mathbb{P} \to \mathbb{P}$</code> on program <code>$P \in \mathbb{P}$</code>, namely <code>$T(P)$</code>, as a function of <code>$n$</code>, the input length. The screener <code>$T$</code> is <strong>universal</strong> if and only if <code>$\mathsf{ch}_{T, P}(n) = m_P(n) \; \forall P \in \mathbb{P}$</code>. Otherwise, the screener <code>$T$</code> is <strong>selective</strong>.
+</div>
+<p>Recall that <code>$m_P(n)$</code> is the memory complexity i.e. the number of loads/stores in program <code>$P$</code> as a function of <code>$n$</code>. The two components that determine a screener's runtime complexity are 1). the check count; and 2). the runtime cost of each check. The latter depends on the underlying address manager implementation and more specifically, the data structure adopted to take care of the bookkeeping. Let <code>$b(n)$</code> denote the bookkeeping cost (as a function of <code>$n$</code>) in terms of the number of memory accesses incurred by a single safety check. Consider a selective screener that aims to achieve at most a slowdown factor of <code>$k$</code> where the runtime efficiency metric we use is the total number of memory accesses made by <code>$T(P)$</code> for some <code>$P \in \tilde{\mathbb{P}}$</code>. Fix some <code>$n$</code> and let <code>$r = \frac{\mathsf{ch}_{T, P}(n)}{m_P(n)}$</code> which is the fraction of memory accesses that are checked. Also, let <code>$b = b(n)$</code> be the cost per check and let <code>$m = m_P(n)$</code>. Then we have <code>\[m + rmb \leq km\]</code> where <code>$k &gt; 1$</code>. It follows that <code>$r \leq (k - 1)/b$</code>. If pointer tagging is employed, the <code>$b$</code> term is a constant. When constant factors apply, it is important to remember that the limitations of HRAM0 mean that such constants are considerably larger than in practical architectures (HRAM0 has no native support for bitwise operations for example) and it is most relevant to explore the performance of certain types of screeners on these architectures. This is something we return to in a later article. In previous pages, the goal was to optimize <code>$b(n)$</code> whereas our goal here is to minimize <code>$r \in [0, 1]$</code>; that is, eliminate as many checks as we can.</p>
+<h1>Eliminating Checks</h1>
+<p>Unlike a universal screener which checks every memory access for safety, a <em>selective screener</em> aims to eliminate checks that it determines are unnecessary without compromising detection of unsafe accesses. A selective screener performs static analysis and builds up useful information about pointers, which then informs its ability to accurately eliminate checks. Consider the following example of a program, namely, selection sort, and in particular, its implementation below. We will use this running example to help describe a series of optimizations.</p>
+<p><strong>Program <code>$P_{\mathsf{SelSort}}$</code></strong></p>
+<pre><code class="language-asm">###############################################################################
+# Selection Sort 
+#
+# description: sorts array pointed to by r4 in-place
+#             (function dirties r5-r12 (i.e.not saved/restored from stack))
+# arguments: r4 - address of array of integers to sort of length n (reg n)
+###############################################################################
+selsort:
+        put 0, r5 # r5 is outer index
+        add r2, n, r12 # r12 = n - 1
+        sub r12, r5, r9
+        brn r9, outerloop
+        brn r2, end_outerloop
+
+outerloop:
+        add r5, r4, r6
+        lod r6, r7 # r7 is min value
+        put 0, r8
+        add r8, r5, r8
+        sub r2, r5, r9 # r9 = r5 + 1 = inner index
+
+        sub n, r9, r10
+        brn r10, innerloop
+        brn r2, end_innerloop
+
+innerloop:
+        add r9, r4, r10
+        lod r10, r10
+        sub r7, r10, r11
+        brn r11, newmin
+        brn r2, nextiter
+newmin:
+        put 0, r11
+        add r11, r9, r8
+        add r11, r10, r7
+nextiter:
+        sub r2, r9, r9
+        sub n, r9, r10
+        brn r10, innerloop
+
+end_innerloop:
+        add r8, r4, r8
+        lod r6, r10
+        sto r7, r6
+        sto r10, r8
+
+        sub r2, r5, r5
+        sub r12, r5, r9
+        brn r9, outerloop
+
+end_outerloop:
+        ret</code></pre>
+<p>It is straightforward to calculate the number of memory accesses. We derive <code>$m_{P_{\mathsf{SelSort}}}(n) = n^2/2 + 5n/2 - 3$</code>. With a universal screener such as <code>$\mathsf{UScreener}$</code> that we developed <a href="uscr.html">previously</a>, it naturally holds that <code>$\mathsf{ch}_{\mathsf{UScreener}}(n) = n^2/2 + 5n/2 - 3$</code>. Now we will consider a series of optimizations that will help us eliminate some of these checks.</p>
+<h2>Optimizations</h2>
+<p>Literature abounds on control flow analysis and this is what is needed here first. Essentially, we start by building a control flow graph by assembling basic blocks (a basic block is a straight line sequence of instructions that can be entered only at the beginning and exited only at the end) and adding edges between the blocks based on branches etc. Loops are detected by recognizing backward edges in the graph. There are a number of forms such loops may take and each form can be distinguished by its unique characteristics.</p>
+<h3>Repeat Access to the Same Pointer</h3>
+<p>If a pointer is stored in a register <code>$r$</code> and it is checked for safety at code location <code>$i$</code> then if at another location <code>$j$</code> a load or store is made to register <code>$r$</code>, then given certain conditions we can avoid checking it for safety again. Firstly, if both instructions belong to different basic blocks, then assert that the basic block containing <code>$i$</code> dominates the basic block containing <code>$j$</code>. Secondly, with data flow analysis, verify that the register <code>$r$</code> is not modified on any execution path between <code>$i$</code> and <code>$j$</code>. Finally, we must ascertain that no call to free occurs on any execution path between <code>$i$</code> and <code>$j$</code>. More thorough analysis can exclude certain cases of free, but as a starting point, we ensure that no call to free occurs whatsoever. </p>
+<p>Let <code>$T_0 := \mathsf{UScreener}$</code>. Applying <code>$T_0$</code> to <code>$P_{\mathsf{SelSort}}$</code> results in there being checks for the instructions on lines 9 (starting from the <code>selsort</code> label and excluding empty lines) <code>lod r6, r7</code>, 18 <code>lod r10, r10</code>, 32 <code>lod r6, r10</code>, 33 <code>sto r7, r6</code>, and 34 <code>sto r10, r8</code>. Consider the load instruction at line 9: <code>lod r6, r7</code>. A check will duly be added by <code>$T_0$</code> for the address in register <code>r6</code>. Now consider the load instruction on line 32: <code>lod r6, r10</code>. Firstly, we see that in order to reach this instruction, the program has to first reach the instruction at line 9. Secondly, it is easy to see that the register <code>r6</code> is not modified between these two instructions. Finally, we can readily ascertain that no call to free occurs on any execution path between these instructions. Therefore, it can be determined that checking for safety prior to the instruction at line 32 is unnecessary and the check can be eliminated. Furthermore, we can update our most recent determination as to the safety of the address at <code>r6</code> to line 32 (we will refer to this location in the code segment as location <code>$i$</code>). The subsequent instruction (at location <code>$i + 3$</code> i.e. line 33) is another memory access instruction: <code>sto r7, r6</code>. Here we see that <code>r6</code> is referenced again. Applying the same reasoning as above, we conclude that no safety check needs to be performed for this instruction either. No further checks can be eliminated based on this particular approach, but we have managed to eliminate two checks from within a loop that overall leads to <code>$2(n - 1)$</code> fewer checks. We denote by <code>$T_1$</code> our new screener, which implements the above optimization.</p>
+<h3>Loop-Invariant Pointers</h3>
+<p>Another optimization we describe is as follows. Consider the following code:</p>
+<pre><code class="language-asm"># assume r4 contains a pointer to an array with the number of elements given by r5
+count_elems_equal_to_first:
+
+# loop, index is r6
+put 1, r6 # skip first element
+
+# count of number of elements equal to the first element is in r0 (ret value)
+put 1, r0 # first element is automatically counted
+
+loop:
+lod r4, r7
+add r5, r4, r8
+lod r8, r8
+
+# check if [r4] == [r4 + r5]
+sub r7, r8, r9
+brz r9, eq # brz (branch if zero) macro defined in spec
+brn r2, iter # recall r2=-1 so here we jump to iter
+
+# Elements are equal so increment count
+eq:
+sub r2, r0, r0 # r0 = r0 + 1
+
+iter:
+sub r5, r6, r7
+brn r7, loop
+
+ret # return num elements equal to first element</code></pre>
+<p>Observe that the load instruction after the label <code>loop</code>, namely <code>lod r4. r7</code>, always loads from a pointer r4 that is not modified during execution of the loop; a condition we call <em>loop-invariant</em>. Our screener <code>$T_1$</code> will add a check before this instruction which will be executed on every iteration of the loop. A simple optimization to make is to check if a pointer in a load/store is loop-invariant then it is sufficient to move the check outside the loop, where it will be executed once instead of say (as in this case) <code>r5</code> times. Note that there is no case where this optimization applies in our example program <code>$P_{\mathsf{SelSort}}$</code>. Let us call the derivative of <code>$T_1$</code> that implements this optimization <code>$T_2$</code>.</p>
+<p>Consider a transformation <code>$\mathsf{LP}_k : \mathbb{P} \to \mathbb{P}$</code> that peels every loop in a program by <code>$k$</code> iterations where <em>peeling</em> refers to inserting copies of the loop body preceded by the loop guard <code>$k$</code> times before the remainder of the loop. This is a relatively straightforward transformation. Let <code>$T'_2 = T_1 \circ \mathsf{LP}_1$</code>. It follows that
+<code>\[\mathsf{ch}_{T_2, P} = \mathsf{ch}_{T'_2, P} \; \; \forall P \in \tilde{\mathbb{P}}.\]</code>
+The reason for this is that in the case of <code>$T'_2$</code>, for loop-invariant pointers, a check will be added in the peeled iteration and the optimization implemented in <code>$T_1$</code> will detect this as dominating the usage of the pointer in the remainder of the loop and therefore remove the check inside the loop. This will have the same effect as directly removing checks for loop-invariant pointers in <code>$T_2$</code>.</p>
+<h3>Reducing Checks to Sequential Pointers</h3>
+<p>It is important to conduct data flow analysis to better understand where possible savings can be made. Most useful is assigning particular symbols to unknown values and assigning algebraic expressions to registers at different points of the program which allow more accurate inferences to be made regarding the program's behavior. Sequential pointers are addresses of arrays whose elements are indexed in sequence (say in a loop). As aforementioned, identifying loops is particularly important. Returning to <code>$P_{\mathsf{SelSort}}$</code> again, we can identify two loops, one nested inside the other. The index of the outer loop is register <code>$\mathsf{r5}$</code>. This is the only variable that either increments or decrements by a constant. On line 9, there is a load instruction with respect to the address contained in register <code>$\mathsf{r6}$</code>. In the previous line, the value of <code>$\mathsf{r6}$</code> is computed as the sum of <code>$\mathsf{r4}$</code> and the index <code>$\mathsf{r5}$</code>. Therefore, we can infer that <code>$\mathsf{r4}$</code> is some kind of &quot;base&quot; pointer. Hence, we have identified a sequential pointer. Similarly, the index of the inner loop is <code>$\mathsf{r9}$</code> and the same sequential pointer can be identified on line 10 where an address to load from in line 11 is computed in register <code>$\mathsf{r10}$</code> as the sum of index <code>$\mathsf{r9}$</code> and base pointer <code>$\mathsf{r4}$</code>. Additional analysis is needed to determine the range of a sequential pointer i.e. lower bound and upper bound of an index in a particular loop. This requires us to determine the terminating condition for a loop.</p>
+<p>In <code>$P_{\mathsf{SelSort}}$</code>, let us first examine the outer loop. We see on line 2 that the index <code>$\mathsf{r5}$</code> is initialized to 0. Since the index increments on every iteration, this is a forward sequence pointer, then the lower bound is 0. Next we must determine the loop's terminating condition. We see that the characteristic backward edge that defines the loop jumps to its beginning conditioned on whether <code>$\mathsf{r5} - \mathsf{r12} &lt; 0$</code> i.e. when the index <code>$\mathsf{r5}$</code> is less than <code>$\mathsf{r12}$</code>. Data flow analysis reveals that <code>$\mathsf{r12}$</code> holds the value <code>$n - 1$</code>. Therefore, the upper bound is <code>$n - 1$</code>, which is a strict upper bound. The range we are interested in then is from 0 to <code>$n - 2$</code> (inclusive). Let us denote the value of the register <code>$\mathsf{r4}$</code> by <code>$b$</code>. Hence, the sequence pointer accessed in the outer loop is an array at address <code>$b$</code> such that the element at index <code>$i$</code> has address <code>$b + i$</code> and <code>$i$</code> takes on values in the range <code>$0, \ldots, n - 2$</code>.</p>
+<p>Now we examine the inner loop. The index of the inner loop is the register <code>$\mathsf{r9}$</code>. This can be ascertained by identifying the register that increments/decrements by a non-zero constant. Note that from an algorithmic perspective, our approach only works for certain common cases and will fail for other loop types. As an example, a case involving an index that increments by a variable amount on each iteration will not be handled. More complex analysis is required for such cases. Repeating the steps from above with a focus on the inner loop allows us to ascertain that the range of the sequence pointer accessed in the inner loop is <code>$i + 1, \ldots, n - 1$</code> (inclusive). Since the initial value of <code>$i$</code> is 0, this concretely means the range is <code>$0, \ldots, n - 1$</code>. Therefore, the putative array has at least <code>$n$</code> elements.</p>
+<p>Overall, we can eliminate the checks inside the loops and place a single check before the loop for address range starting at <code>$\mathsf{r4}$</code> and ending at <code>$\mathsf{r4} + n$</code> (exclusive). Let us call <code>$T_3$</code> the screener that implements these optimizations.
+The number of checks made by <code>$T_3$</code> for the program <code>$P_{\mathsf{SelSort}}$</code> is <code>\[\mathsf{ch}_{T_3, P_{\mathsf{SelSort}}}(n) = 1\]</code></p>
+<p><em>To be continued...</em></p></article></div>
+      </div><footer style='margin-top:32px;'>
+</footer><!DOCTYPE html>
+<script src="js/math_code.js"></script>
+<script async
+  src="//mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+</html>
