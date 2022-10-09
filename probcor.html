@@ -117,7 +117,7 @@ ul.vertical a.active {
 </ul>
 </div>
 </center>
-<div class='box content'><article style='margin-top: 32px;'><h1>Probabilistic Correctness and Pointer Tagging</h1><u>Last Updated:</u> <time datetime=2022-08-31T13:18:42>Wednesday 31st August 2022</time><style>
+<div class='box content'><article style='margin-top: 32px;'><h1>Probabilistic Correctness and Pointer Tagging</h1><u>Last Updated:</u> <time datetime=2022-10-01T09:19:40>Saturday 1st October 2022</time><style>
 table, th, td {
   border: 1px solid black;
   border-collapse: collapse;
@@ -125,17 +125,18 @@ table, th, td {
 </style>
 <p>Here we attempt to give an account of memory safety with probabilistic correctness. In fact by relaxing the correctness conditions of a screener to guarantee memory safety with all but some small error probability, the doors are opened to a plethora of opportunities to boost performance and shrink the memory overhead. We then examine a case-in-point in the form of a screener based on pointer tagging. While pointer tagging generally requires hardware support for a certain addressing feature - a feature not natively supported by HRAM0 - we describe a suitable adaptation.</p>
 <h2>Families of Programs with Probabilistic Correctness</h2>
-<p>Many of the definitions pertaining to program families in our <a href="progfam.html">article on classification of programs</a> can also be generalized to appropriately permit probabilistic correctness.</p>
+<p>Many of the definitions pertaining to program families in our <a href="progfam.html">article on classification of programs</a> can also be generalized to appropriately permit probabilistic correctness. For the following definition to make formal sense, we require that there is some nondeterminism in the programs. We capture this by extending the program input to incorporate <em>random coins</em> of length <code>$\chi(\kappa)$</code> where <code>$\kappa$</code> is the &quot;problem size&quot;. The &quot;data&quot; portion of the input is then of length <code>$n(\kappa) - \chi(\kappa)$</code>. We denote the randomness distribution by <code>$\mathcal{R}$</code> and write <code>$\mathsf{exec}(P, x; r)$</code> to signify the execution of <code>$\mathsf{exec}(P, x \parallel r)$</code> where <code>$r \stackrel{\$}{\gets} \mathcal{R}$</code> is first sampled from the randomness distribution and incorporated as part of the program input.</p>
 <div class="definition" style="font-style: normal">
-<b>1. </b>A family of programs <code>$\mathcal{F}$</code> with probabilistic correctness <code>$q \in [0, 1]$</code> is a subset of admissible programs <code>$\mathcal{F} \subseteq \mathbb{P}$</code> equipped with a pair <code>$(\mathcal{X}, \mathcal{Y})$</code>, an input distribution <code>$\mathcal{X}$</code> and output distribution <code>$\mathcal{Y}$</code> respectively, such that for all programs <code>$P \in \mathcal{F}$</code>, it holds that for an input <code>$x \stackrel{\$}{\gets} \mathcal{X}$</code> sampled from the input distribution, <code>$P$</code> produces the expected output for input <code>$x$</code> with probability <code>$q$</code> i.e. <code>$\mathsf{Pr}\big[p_\mathcal{Y}(x, \mathsf{exec}(P, x)) \to 1\big] = q$</code>.
+<b>1. </b>A family of programs <code>$\mathcal{F}$</code> with probabilistic correctness <code>$q \in [0, 1]$</code> is a subset of admissible programs <code>$\mathcal{F} \subseteq \mathbb{P}$</code> equipped with a pair <code>$(\mathcal{X}, \mathcal{Y})$</code>, an input distribution <code>$\mathcal{X}$</code> and output distribution <code>$\mathcal{Y}$</code> respectively, such that for all programs <code>$P \in \mathcal{F}$</code>, it holds that for an input <code>$x \stackrel{\$}{\gets} \mathcal{X}$</code> sampled from the input distribution and randomness <code>$r \stackrel{\$}{\gets} \mathcal{R}$</code>, <code>$P$</code> produces the expected output for input <code>$x$</code> with probability <code>$q$</code> i.e. <code>$\mathsf{Pr}\big[p_\mathcal{Y}(x, \mathsf{exec}(P, x; r)) \to 1\big] \geq q$</code> where the probability is taken over choice of <code>$x$</code> and <code>$r$</code>.
 </div>
 <h2><code>$p$</code>-Strenghtening Transformations</h2>
 <div class="definition" style="font-style: normal">
 <b>2. </b>Let <code>$\mathcal{X}$</code> be an input distribution on <code>$\mathbb{Z}^\ast$</code>, and let <code>$p \gg 1/2 \in [0, 1]$</code>. A transformation <code>$T$</code> is said to be <em>p-strengthening</em> if for all <code>$P \in \mathbb{P}$</code> the following two properties are satisfied.<ul>
-<li><code>$\mathbf{S.1}$</code>: <code>$\mathsf{Pr} \big[\mathsf{exec}(T(P), \mathbf{x}) \neq \bot \;\;|\;\; \mathsf{exec}(P, \mathbf{x}) = \bot \big] = p\;\; \forall \mathbf{x} \in \mathcal{X}$</code>.</li>
+<li><code>$\mathbf{S.1}$</code>: <code>$\mathsf{Pr} \big[\mathsf{exec}(T(P), \mathbf{x}; r) \neq \bot \;\;|\;\; \mathsf{exec}(P, \mathbf{x}; r) = \bot \big] = p\;\; \forall \mathbf{x} \in \mathcal{X}$</code> where the probability is taken over the choice of randomness <code>$r \stackrel{\$}{\gets} \mathcal{R}$</code></li>
 <li><code>$\mathbf{S.2}$</code>: <code>$T(P) \preceq P$</code> (non-weakening)</li>
 </ul>
 </div>
+<p>Observe that in S.1 the probability is <code>$p$</code> <em>for every</em> input in the input space. This is a stronger assurance than the probabilistic correctness of Definition~1 where the probability ranges over <code>$\mathcal{X}$</code>. This guarantees that in Definition~2 safety is equiprobable for highly unlikely inputs as for highly likely inputs.</p>
 <div class="definition" style="font-style: normal">
 <b>3. </b>A <em><code>$p$</code>-screener</em> is a transformation <code>$T : \mathbb{P} \to \mathbb{P}$</code> that is<ul>
 <li>an instrumentor</li>
@@ -167,7 +168,7 @@ Recall that an an instance of Address Manager is a tuple of algorithms <code>$(\
 <ul>
 <li>generate random integer tag in the range <code>$0$</code> - <code>$(2^{\mathsf{TS}} - 1)$</code></li>
 <li>compute <code>$z \gets (p - \mathsf{VB}) / \mathsf{TG}$</code></li>
-<li>for every <code>$0 \leq; j &lt; s / \mathsf{TG}$</code></li>
+<li>for every <code>$0 \leq j &lt; s / \mathsf{TG}$</code></li>
 <li>
 <ul>
 <li>store tag at <code>$\mathsf{SB} + z + j$</code></li>
